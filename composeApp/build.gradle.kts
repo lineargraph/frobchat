@@ -43,6 +43,12 @@ kotlin {
 		val desktopMain by getting
 
 		commonMain.dependencies {
+			val trixnityVersion = "5.5.2"
+
+			fun trixnity(module: String, version: String = trixnityVersion) =
+				"de.connect2x.trixnity:trixnity-$module:$version"
+
+			implementation(trixnity("client"))
 			// Compose basics
 			implementation(compose.runtime)
 			implementation(compose.foundation)
@@ -187,7 +193,8 @@ android {
 		sourceCompatibility = JavaVersion.VERSION_11
 		targetCompatibility = JavaVersion.VERSION_11
 	}
-	buildFeatures { compose = true
+	buildFeatures {
+		compose = true
 	}
 }
 

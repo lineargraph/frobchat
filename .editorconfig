@@ -1,0 +1,15 @@
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+indent_size = 4
+indent_style = tab
+insert_final_newline = true
+max_line_length = 120
+
+[*.kt]
+ij_kotlin_name_count_to_use_star_import = 99999
+ij_kotlin_name_count_to_use_star_import_for_members = 99999
+ij_kotlin_imports_layout = *, |, kotlinx.**, kotlin.**, net.minecraft.**, moe.nea.firmament.**, |, $*
+ij_kotlin_packages_to_use_import_on_demand = false

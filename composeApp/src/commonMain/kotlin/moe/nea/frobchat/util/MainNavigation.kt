@@ -17,50 +17,50 @@ import moe.nea.frobchat.views.screens.WelcomePage
 
 // TODO: implement https://github.com/adrielcafe/voyager/issues/497
 interface FrobRoute : Screen {
-    fun ownsPage(page: FrobRoute): Boolean {
-        return page == this
-    }
+	fun ownsPage(page: FrobRoute): Boolean {
+		return page == this
+	}
 }
 
 val globalNavigationLocal =
-    staticCompositionLocalOf<TypedNavHostController<FrobRoute>> { error("Global Navigation Scope not provided") }
+	staticCompositionLocalOf<TypedNavHostController<FrobRoute>> { error("Global Navigation Scope not provided") }
 
 class TypedNavHostController<T : Screen>(
-    val navigator: Navigator,
+	val navigator: Navigator,
 ) {
-    fun navigate(page: T) {
-        navigator.push(page)
-    }
+	fun navigate(page: T) {
+		navigator.push(page)
+	}
 
-    fun goBack() {
-        navigator.pop()
-    }
+	fun goBack() {
+		navigator.pop()
+	}
 
-    /**
-     * **SAFETY**: this is safe assuming only navigate is ever called instead of navigator directly
-     */
-    @Suppress("UNCHECKED_CAST")
-    val currentScreen get() = navigator.lastItem as T
+	/**
+	 * **SAFETY**: this is safe assuming only navigate is ever called instead of navigator directly
+	 */
+	@Suppress("UNCHECKED_CAST")
+	val currentScreen get() = navigator.lastItem as T
 }
 
 @Composable
 fun findGlobalNavController(): TypedNavHostController<FrobRoute> {
-    return globalNavigationLocal.current
+	return globalNavigationLocal.current
 }
 
 private val logger = KotlinLogging.logger { }
 
 @Composable
 fun NavigationContext() {
-    Navigator(WelcomePage) { nav ->
-        val globalNavController = TypedNavHostController<FrobRoute>(nav)
-        Column(
-            modifier = Modifier.fillMaxSize()
-                .handleBackButton(globalNavController)
-        ) { // TODO: is a column really the best container?
-            CompositionLocalProvider(globalNavigationLocal provides globalNavController) {
-                CurrentScreen()
-            }
-        }
-    }
+	Navigator(WelcomePage) { nav ->
+		val globalNavController = TypedNavHostController<FrobRoute>(nav)
+		Column(
+			modifier = Modifier.fillMaxSize()
+				.handleBackButton(globalNavController)
+		) { // TODO: is a column really the best container?
+			CompositionLocalProvider(globalNavigationLocal provides globalNavController) {
+				CurrentScreen()
+			}
+		}
+	}
 }

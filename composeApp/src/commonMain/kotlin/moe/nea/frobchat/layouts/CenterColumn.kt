@@ -12,20 +12,20 @@ import androidx.compose.ui.unit.dp
 
 @Composable
 fun CenterColumn(
-    width: Dp = 350.dp,
-    content: @Composable ColumnScope.() -> Unit
+	width: Dp = 350.dp,
+	content: @Composable ColumnScope.() -> Unit
 ) {
-    Scaffold {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.fillMaxSize().padding(it),
-        ) {
-            Column(
-                verticalArrangement = Arrangement.Center,
-                modifier = Modifier.fillMaxHeight().padding(8.dp).width(width)
-            ) {
-                content()
-            }
-        }
-    }
+	Scaffold {
+		Column(
+			horizontalAlignment = Alignment.CenterHorizontally,
+			modifier = Modifier.fillMaxSize().padding(it),
+		) {
+			Column(
+				verticalArrangement = Arrangement.Center,
+				modifier = Modifier.fillMaxHeight().padding(8.dp).width(width)
+			) {
+				content()
+			}
+		}
+	}
 }

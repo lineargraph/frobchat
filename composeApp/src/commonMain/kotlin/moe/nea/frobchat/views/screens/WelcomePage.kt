@@ -12,17 +12,17 @@ import moe.nea.frobchat.util.findGlobalNavController
 
 @Serializable
 object WelcomePage : FrobRoute {
-    @Composable
-    override fun Content() {
-        val nav = findGlobalNavController()
-        CenterColumn {
-            Text("Welcome to ${BuildConfig.BRAND}", fontSize = 20.sp)
-            Text("Test Page, Please add more content")
-            Button(onClick = {
-                println("Button that does nothing!")
-            }) {
-                Text("Continue")
-            }
-        }
-    }
+	@Composable
+	override fun Content() {
+		val nav = findGlobalNavController()
+		CenterColumn {
+			Text("Welcome to ${BuildConfig.BRAND}", fontSize = 20.sp)
+			Text("Test Page, Please add more content")
+			Button(onClick = {
+				println("Button that does nothing!")
+			}) {
+				Text("Continue")
+			}
+		}
+	}
 }

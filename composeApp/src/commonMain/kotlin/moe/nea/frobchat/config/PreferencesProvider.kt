@@ -8,9 +8,9 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import moe.nea.frobchat.util.compose.upgrade
 
 val globalPreferencesProvider =
-    staticCompositionLocalOf<Preferences> {
-        error("Global Navigation Scope not provided")
-    }
+	staticCompositionLocalOf<Preferences> {
+		error("Global Navigation Scope not provided")
+	}
 
 @Composable
 @ReadOnlyComposable
@@ -28,7 +28,7 @@ fun <T> findPreference(selectPreference: Preferences.() -> DataValue<T>): Mutabl
 
 @Composable
 fun InjectPreferenceProvider(content: @Composable () -> Unit) {
-    CompositionLocalProvider(globalPreferencesProvider provides Preferences(DataStore)) {
-        content()
-    }
+	CompositionLocalProvider(globalPreferencesProvider provides Preferences(DataStore)) {
+		content()
+	}
 }

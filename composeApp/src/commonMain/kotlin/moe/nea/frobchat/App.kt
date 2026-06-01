@@ -12,10 +12,10 @@ import org.jetbrains.compose.ui.tooling.preview.Preview
 @Preview
 fun App() {
 
-    InjectPreferenceProvider {
-        val (darkMode) = findPreference { colorTheme }
-        MaterialTheme(colorScheme = darkMode.resolveToColors()) {
-            NavigationContext()
-        }
-    }
+	InjectPreferenceProvider {
+		val (darkMode) = findPreference { colorTheme }
+		MaterialTheme(colorScheme = darkMode.resolveToColors()) {
+			NavigationContext()
+		}
+	}
 }
