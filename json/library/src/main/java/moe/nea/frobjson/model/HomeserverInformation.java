@@ -3,11 +3,15 @@ package moe.nea.frobjson.model;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
+import java.lang.Override;
 import java.lang.String;
+import java.lang.StringBuilder;
+import java.lang.SuppressWarnings;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
 @NullMarked
+@SuppressWarnings("unused")
 public final class HomeserverInformation {
   private @Nullable JsonElement $json;
 
@@ -49,5 +53,15 @@ public final class HomeserverInformation {
         base_url);
     $constructed.$json = $json;
     return $constructed;
+  }
+
+  @Override
+  @SuppressWarnings("StringBufferReplaceableByString")
+  public String toString() {
+    StringBuilder $string = new StringBuilder();
+    $string.append("HomeserverInformation { ");
+    $string.append("base_url=").append(this.base_url).append(", ");
+    $string.append("... }");
+    return $string.toString();
   }
 }

@@ -7,6 +7,7 @@ import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
+import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
 import java.util.List;
 import java.util.Set;
@@ -43,11 +44,21 @@ public class SchemaObjectType implements SchemaType {
 		var nullable = AnnotationSpec.builder(Nullable.class).build();
 		var cls = TypeSpec.classBuilder(typeName);
 		cls.addModifiers(Modifier.PUBLIC, Modifier.FINAL);
-		cls.addAnnotation(NullMarked.class);
+		cls.addAnnotation(NullMarked.class)
+			.addAnnotation(AnnotationSpec.builder(SuppressWarnings.class)
+				.addMember("value", "$S", "unused").build());
 
 		cls.addField(FieldSpec.builder(TypeName.get(JsonElement.class)
 			.annotated(nullable), "$json", Modifier.PRIVATE).build());
 
+		var toString = MethodSpec.methodBuilder("toString")
+			.addAnnotation(Override.class)
+			.addAnnotation(AnnotationSpec.builder(SuppressWarnings.class)
+				.addMember("value", "$S", "StringBufferReplaceableByString").build())
+			.addModifiers(Modifier.PUBLIC)
+			.returns(String.class)
+			.addStatement("$T $L = new $T()", StringBuilder.class, "$string", StringBuilder.class)
+			.addStatement("$L.append($S)", "$string", name + " { ");
 		var constructor = MethodSpec.constructorBuilder()
 			.addModifiers(Modifier.PUBLIC);
 		var encode = MethodSpec.methodBuilder("generateJson")
@@ -100,11 +111,15 @@ public class SchemaObjectType implements SchemaType {
 			} else {
 				encode.beginControlFlow("");
 			}
+
 			encode
 				.addStatement("$T $L", JsonElement.class, "$jsonField")
 				.addCode(schemaType.accessSerialize("this." + fieldName, "$jsonField"))
 				.addStatement("$L.add($S, $L)", "$json", propName, "$jsonField")
 				.endControlFlow();
+
+			//ToString
+			toString.addStatement("$L.append($S).append(this.$L).append($S)", "$string", propName + "=", fieldName, ", ");
 
 			// Decoding
 			constructorCall.add("$L" + (isLast ? ")" : ",\n"), fieldName);
@@ -139,6 +154,11 @@ public class SchemaObjectType implements SchemaType {
 			.build());
 		cls.addMethod(decode.build());
 		cls.addMethod(constructor.build());
+//		cls.addMethod(MethodSpec.methodBuilder("shallowWithoutExtras").build())
+		cls.addMethod(toString
+			.addStatement("$L.append($S)", "$string", "... }")
+			.addStatement("return $L.toString()", "$string")
+			.build());
 		return List.of(JavaFile
 			.builder(context.packageName, cls.build())
 			.build());

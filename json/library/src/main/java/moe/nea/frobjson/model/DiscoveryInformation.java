@@ -2,10 +2,15 @@ package moe.nea.frobjson.model;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import java.lang.Override;
+import java.lang.String;
+import java.lang.StringBuilder;
+import java.lang.SuppressWarnings;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
 @NullMarked
+@SuppressWarnings("unused")
 public final class DiscoveryInformation {
   private @Nullable JsonElement $json;
 
@@ -70,5 +75,16 @@ public final class DiscoveryInformation {
         midentity_server);
     $constructed.$json = $json;
     return $constructed;
+  }
+
+  @Override
+  @SuppressWarnings("StringBufferReplaceableByString")
+  public String toString() {
+    StringBuilder $string = new StringBuilder();
+    $string.append("DiscoveryInformation { ");
+    $string.append("m.homeserver=").append(this.mhomeserver).append(", ");
+    $string.append("m.identity_server=").append(this.midentity_server).append(", ");
+    $string.append("... }");
+    return $string.toString();
   }
 }
