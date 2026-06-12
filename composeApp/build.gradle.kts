@@ -12,15 +12,15 @@ plugins {
 	alias(libs.plugins.composeCompiler)
 	alias(libs.plugins.composeHotReload)
 	id("com.github.gmazzo.buildconfig") version "5.6.5"
-	id("com.google.devtools.ksp") version "2.1.21-2.0.1"
+	id("com.google.devtools.ksp") version "2.3.9"
 }
 
 kotlin {
-	jvmToolchain(11)
+	jvmToolchain(21)
 	androidTarget {
 		@OptIn(ExperimentalKotlinGradlePluginApi::class)
 		compilerOptions {
-			jvmTarget.set(JvmTarget.JVM_11)
+			jvmTarget.set(JvmTarget.JVM_21)
 		}
 	}
 
@@ -43,12 +43,7 @@ kotlin {
 		val desktopMain by getting
 
 		commonMain.dependencies {
-			val trixnityVersion = "5.5.2"
 
-			fun trixnity(module: String, version: String = trixnityVersion) =
-				"de.connect2x.trixnity:trixnity-$module:$version"
-
-			implementation(trixnity("client"))
 			// Compose basics
 			implementation(compose.runtime)
 			implementation(compose.foundation)
@@ -78,6 +73,9 @@ kotlin {
 //			implementation(libs.androidx.navigation.ui)
 //			implementation(libs.androidx.navigation.features.fragment)
 
+			implementation(libs.trixinity.client)
+			implementation(libs.ktor.client.core)
+
 			// Logging
 			implementation(libs.kotlinLogging)
 			runtimeOnly(libs.slf4j.simple)
@@ -86,9 +84,14 @@ kotlin {
 			implementation(libs.kotlin.test)
 		}
 		desktopMain.dependencies {
+			implementation(libs.trixinity.client.repository.room)
+			implementation(libs.trixinity.client.media.okio)
+			implementation(libs.trixinity.client.cryptodriver.libolm)
+			implementation(libs.ktor.client.jetty)
 			implementation(compose.desktop.currentOs)
 			implementation(libs.kotlinx.coroutinesSwing)
 			implementation(libs.directories)
+			implementation(libs.androidx.sqlite.bundled)
 
 			implementation(libs.vlcj)
 

@@ -10,8 +10,8 @@ import kotlinx.coroutines.flow.map
 expect object DataStore : IDataStore
 
 abstract class IDataStore {
-	fun createStringValue(key: String): DataValue<String> {
-		return createMapValueWithPrefix(key).mapSingle(key, { it }, { it }, "")
+	fun createStringValue(key: String, default: String = ""): DataValue<String> {
+		return createMapValueWithPrefix(key).mapSingle(key, { it }, { it }, default)
 	}
 
 	abstract fun createMapValueWithPrefix(prefix: String): DataValue<Map<String, String>>

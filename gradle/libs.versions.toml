@@ -1,5 +1,5 @@
 [versions]
-agp = "8.9.3"
+agp = "8.10.0"
 android-compileSdk = "35"
 android-minSdk = "24"
 android-targetSdk = "35"
@@ -18,17 +18,18 @@ composeMultiplatform = "1.8.1"
 directories = "26"
 junit = "4.13.2"
 jellyfin = "1.6.8"
-kotlin = "2.1.21"
+kotlin = "2.3.21"
 kotlinLogging = "7.0.7"
 kotlinx-coroutines = "1.10.2"
 androidNavigation = "2.9.0-beta01"
+androidx-sqlite = "2.6.2"
 serialization-json = "1.8.1"
 slf4jSimple = "2.0.17"
 materialIconsExtended = "1.7.3"
 vlcj = "4.11.0"
 voyager = "1.1.0-beta03"
-
-
+trixinity = "5.5.2"
+ktor = "3.5.0"
 
 [libraries]
 androidx-navigation-compose = { module = "org.jetbrains.androidx.navigation:navigation-compose", version.ref = "androidNavigation" }
@@ -53,6 +54,7 @@ androidx-constraintlayout = { module = "androidx.constraintlayout:constraintlayo
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "androidx-activity" }
 androidx-lifecycle-viewmodel = { module = "org.jetbrains.androidx.lifecycle:lifecycle-viewmodel", version.ref = "androidx-lifecycle" }
 androidx-lifecycle-runtimeCompose = { module = "org.jetbrains.androidx.lifecycle:lifecycle-runtime-compose", version.ref = "androidx-lifecycle" }
+androidx-sqlite-bundled = { module = "androidx.sqlite:sqlite-bundled", version.ref = "androidx-sqlite" }
 kotlinx-coroutinesSwing = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-swing", version.ref = "kotlinx-coroutines" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "serialization-json" }
 jellyfin-core = { module = "org.jellyfin.sdk:jellyfin-core", version.ref = "jellyfin" }
@@ -67,6 +69,14 @@ voyager-koin = { module = "cafe.adriel.voyager:voyager-koin", version.ref = "voy
 voyager-hilt = { module = "cafe.adriel.voyager:voyager-hilt", version.ref = "voyager" }
 voyager-kodein = { module = "cafe.adriel.voyager:voyager-kodein", version.ref = "voyager" }
 voyager-rxjava = { module = "cafe.adriel.voyager:voyager-rxjava", version.ref = "voyager" }
+trixinity-client = { module = "de.connect2x.trixnity:trixnity-client", version.ref = "trixinity" }
+trixinity-client-repository-room = { module = "de.connect2x.trixnity:trixnity-client-repository-room", version.ref = "trixinity" }
+trixinity-client-media-okio = { module = "de.connect2x.trixnity:trixnity-client-media-okio", version.ref = "trixinity" }
+trixinity-client-cryptodriver-libolm = { module = "de.connect2x.trixnity:trixnity-client-cryptodriver-libolm", version.ref = "trixinity" }
+ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
+ktor-client-jetty = { module = "io.ktor:ktor-client-jetty", version.ref = "ktor" }
+
+
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }

@@ -6,6 +6,7 @@ import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.staticCompositionLocalOf
 import moe.nea.frobchat.util.compose.upgrade
+import kotlin.coroutines.coroutineContext
 
 val globalPreferencesProvider =
 	staticCompositionLocalOf<Preferences> {

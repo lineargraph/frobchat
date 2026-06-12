@@ -21,8 +21,8 @@ fun CenterColumn(
 			modifier = Modifier.fillMaxSize().padding(it),
 		) {
 			Column(
-				verticalArrangement = Arrangement.Center,
-				modifier = Modifier.fillMaxHeight().padding(8.dp).width(width)
+				verticalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterVertically),
+				modifier = Modifier.fillMaxHeight().padding(8.dp).width(width),
 			) {
 				content()
 			}
