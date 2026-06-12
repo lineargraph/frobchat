@@ -30,8 +30,12 @@ vlcj = "4.11.0"
 voyager = "1.1.0-beta03"
 trixinity = "5.5.2"
 ktor = "3.5.0"
-
+javapoet = "0.16.0"
+gson = "2.14.0"
 [libraries]
+jspecify = { module = "org.jspecify:jspecify", version = "1.0.0" }
+javapoet = { module = "com.palantir.javapoet:javapoet", version.ref = "javapoet" }
+gson = { module = "com.google.code.gson:gson", version.ref = "gson" }
 androidx-navigation-compose = { module = "org.jetbrains.androidx.navigation:navigation-compose", version.ref = "androidNavigation" }
 androidx-navigation-features-fragment = { module = "androidx.navigation:navigation-dynamic-features-fragment", version.ref = "androidNavigation" }
 androidx-navigation-ui = { module = "androidx.navigation:navigation-ui", version.ref = "androidNavigation" }

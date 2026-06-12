@@ -34,3 +34,5 @@ plugins {
 
 include(":composeApp")
 include(":launcher")
+include(":json:generator")
+include(":json:library")
