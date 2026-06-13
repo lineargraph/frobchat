@@ -1,10 +1,9 @@
-package moe.nea.frobjson.generator;
+package moe.nea.frobjson.internal;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import org.jspecify.annotations.Nullable;
 
-import javax.lang.model.element.ExecutableElement;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 

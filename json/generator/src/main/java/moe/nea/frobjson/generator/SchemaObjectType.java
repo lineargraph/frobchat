@@ -3,11 +3,9 @@ package moe.nea.frobjson.generator;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.palantir.javapoet.*;
-import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
-import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
 import java.util.List;
 import java.util.Set;
@@ -27,16 +25,16 @@ public class SchemaObjectType implements SchemaType {
 		String propertyName,
 		@Nullable SchemaType parent
 	) {
-		assert "object".equals(JsonUtil.getStringOrNull(definition.get("type")));
+		assert "object".equals(moe.nea.frobjson.internal.JsonUtil.getStringOrNull(definition.get("type")));
 		this.definition = definition;
 		this.context = context;
 		this.name = context.deriveName(
 			parent,
-			JsonUtil.getStringOrNull(definition.get("title")),
+			moe.nea.frobjson.internal.JsonUtil.getStringOrNull(definition.get("title")),
 			propertyName
 		);
 		this.typeName = ClassName.get(context.packageName, name);
-		this.requiredProps = JsonUtil.streamOrEmpty(definition.get("required")).map(JsonElement::getAsString).collect(Collectors.toSet());
+		this.requiredProps = moe.nea.frobjson.internal.JsonUtil.streamOrEmpty(definition.get("required")).map(JsonElement::getAsString).collect(Collectors.toSet());
 	}
 
 	@Override
