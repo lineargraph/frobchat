@@ -58,14 +58,6 @@ public class SchemaObjectType implements SchemaType {
 		cls.addField(FieldSpec.builder(TypeName.get(JsonElement.class)
 			.annotated(nullable), "$json", Modifier.PRIVATE).build());
 
-		var toString = MethodSpec.methodBuilder("toString")
-			.addAnnotation(Override.class)
-			.addAnnotation(AnnotationSpec.builder(SuppressWarnings.class)
-				.addMember("value", "$S", "StringBufferReplaceableByString").build())
-			.addModifiers(Modifier.PUBLIC)
-			.returns(String.class)
-			.addStatement("$T $L = new $T()", StringBuilder.class, "$string", StringBuilder.class)
-			.addStatement("$L.append($S)", "$string", name + " { ");
 		var constructor = MethodSpec.constructorBuilder()
 			.addModifiers(Modifier.PUBLIC);
 
@@ -112,6 +104,20 @@ public class SchemaObjectType implements SchemaType {
 			cls.addField(field.build());
 		}
 
+		{
+			var toString = MethodSpec.methodBuilder("toString")
+				.addAnnotation(Override.class)
+				.addModifiers(Modifier.PUBLIC)
+				.returns(String.class)
+				.addCode("return $S\n", name + " { ");
+
+			for (var prop : properties) {
+				toString.addCode("    + $S + this.$L + $S\n", prop.propName() + "=", prop.fieldName(), ", ");
+			}
+			cls.addMethod(toString
+				.addStatement("    + $S", "... }")
+				.build());
+		}
 		var propIter = properties.iterator();
 		var hasAnyProps = false;
 		while (propIter.hasNext()) {
@@ -129,10 +135,6 @@ public class SchemaObjectType implements SchemaType {
 			// Constructor
 			constructor.addParameter(fieldType, fieldName)
 				.addStatement("this.$L = $L", fieldName, fieldName);
-
-
-			//ToString
-			toString.addStatement("$L.append($S).append(this.$L).append($S)", "$string", propName + "=", fieldName, ", ");
 
 			// Decoding
 			constructorCall.add("$L" + (isLast ? ")" : ",\n"), fieldName);
@@ -167,10 +169,6 @@ public class SchemaObjectType implements SchemaType {
 		cls.addMethod(decode.build());
 		cls.addMethod(constructor.build());
 //		cls.addMethod(MethodSpec.methodBuilder("shallowWithoutExtras").build())
-		cls.addMethod(toString
-			.addStatement("$L.append($S)", "$string", "... }")
-			.addStatement("return $L.toString()", "$string")
-			.build());
 		return List.of(JavaFile
 			.builder(context.packageName, cls.build())
 			.build());
