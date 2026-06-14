@@ -83,12 +83,6 @@ public class SchemaObjectType implements SchemaType {
 			}
 			cls.addMethod(encode.build());
 		}
-		var decode = MethodSpec.methodBuilder("fromJson")
-			.returns(typeName)
-			.addModifiers(Modifier.STATIC, Modifier.PUBLIC)
-			.addParameter(JsonElement.class, "$json");
-		var jsonObjectName = "$json$object";
-		decode.addStatement("$T $L = $L.getAsJsonObject()", JsonObject.class, jsonObjectName, "$json");
 
 		for (var prop : properties) {
 			var field = FieldSpec.builder(
@@ -112,8 +106,6 @@ public class SchemaObjectType implements SchemaType {
 			}
 			cls.addMethod(constructor.build());
 		}
-		var constructorCall = CodeBlock.builder()
-			.add("$T $L = new $T(\n", typeName, "$constructed", typeName);
 
 		{
 			var toString = MethodSpec.methodBuilder("toString")
@@ -129,43 +121,48 @@ public class SchemaObjectType implements SchemaType {
 				.addStatement("    + $S", "... }")
 				.build());
 		}
-		var propIter = properties.iterator();
-		var hasAnyProps = false;
-		while (propIter.hasNext()) {
-			hasAnyProps = true;
-			var prop = propIter.next();
-			var isLast = !propIter.hasNext();
-			var propName = prop.propName();
-			var fieldName = prop.fieldName();
-			var schemaType = prop.type();
-			var fieldType = prop.fieldType();
 
+		for (var props : properties) {
 			// Getter
-			cls.addMethod(MethodSpec.methodBuilder(fieldName).addModifiers(Modifier.PUBLIC).returns(fieldType).addStatement("return this.$L", fieldName).build());
-
-			// Decoding
-			constructorCall.add("$L" + (isLast ? ")" : ",\n"), fieldName);
-			decode.addStatement("$T $L", fieldType.withoutAnnotations(), fieldName)
-				.beginControlFlow("")
-				.addStatement("$T $L = $L.get($S)", JsonElement.class, "$jsonField", jsonObjectName, propName);
-
-			if (!requiredProps.contains(propName)) {
-				decode.beginControlFlow("if ($L == null)", "$jsonField")
-					.addStatement("$L = null", fieldName)
-					.nextControlFlow("else")
-					.addStatement("$L = $L", fieldName, schemaType.accessDeserialize("$jsonField"))
-					.endControlFlow();
-			} else {
-				decode.addStatement("$L = $L", fieldName, schemaType.accessDeserialize("$jsonField"));
-			}
-			decode.endControlFlow();
+			cls.addMethod(MethodSpec.methodBuilder(props.fieldName()).addModifiers(Modifier.PUBLIC).returns(props.fieldType()).addStatement("return this.$L", props.fieldName()).build());
 		}
-		if (!hasAnyProps)
-			constructorCall.add(")");
-		decode.addStatement(constructorCall.build())
-			.addStatement("$L.$L = $L", "$constructed", "$json", "$json")
-			.addStatement("return $L", "$constructed");
 
+		{
+			var decode = MethodSpec.methodBuilder("fromJson")
+				.returns(typeName)
+				.addModifiers(Modifier.STATIC, Modifier.PUBLIC)
+				.addParameter(JsonElement.class, "$json");
+			var jsonObjectName = "$json$object";
+			decode.addStatement("$T $L = $L.getAsJsonObject()", JsonObject.class, jsonObjectName, "$json");
+			for (var prop : properties) {
+				// Decoding
+				decode.addStatement("$T $L", prop.fieldType().withoutAnnotations(), prop.fieldName())
+					.beginControlFlow("")
+					.addStatement("$T $L = $L.get($S)", JsonElement.class, "$jsonField", jsonObjectName, prop.propName());
+
+				if (!prop.required()) {
+					decode.beginControlFlow("if ($L == null)", "$jsonField")
+						.addStatement("$L = null", prop.fieldName())
+						.nextControlFlow("else")
+						.addStatement("$L = $L", prop.fieldName(), prop.type().accessDeserialize("$jsonField"))
+						.endControlFlow();
+				} else {
+					decode.addStatement("$L = $L", prop.fieldName(), prop.type().accessDeserialize("$jsonField"));
+				}
+				decode.endControlFlow();
+			}
+			decode
+				.addCode("$T $L = new $T(\n", typeName, "$constructed", typeName)
+				.addCode(
+					properties.stream()
+						.map(it -> CodeBlock.of("    $L", it.fieldName()))
+						.collect(CodeBlock.joining(",\n")))
+				.addStatement(")")
+				.addStatement("$L.$L = $L", "$constructed", "$json", "$json")
+				.addStatement("return $L", "$constructed");
+
+			cls.addMethod(decode.build());
+		}
 		cls.addMethod(MethodSpec.methodBuilder("asJson")
 			.addModifiers(Modifier.PUBLIC)
 			.returns(JsonElement.class)
@@ -174,7 +171,6 @@ public class SchemaObjectType implements SchemaType {
 			.endControlFlow()
 			.addStatement("return this.$L", "$json")
 			.build());
-		cls.addMethod(decode.build());
 //		cls.addMethod(MethodSpec.methodBuilder("shallowWithoutExtras").build())
 		return List.of(JavaFile
 			.builder(context.packageName, cls.build())
