@@ -33,6 +33,7 @@ ktor = "3.5.0"
 javapoet = "0.16.0"
 gson = "2.14.0"
 [libraries]
+guava = { module = "com.google.guava:guava", version = "33.6.0-jre" }
 jspecify = { module = "org.jspecify:jspecify", version = "1.0.0" }
 javapoet = { module = "com.palantir.javapoet:javapoet", version.ref = "javapoet" }
 gson = { module = "com.google.code.gson:gson", version.ref = "gson" }

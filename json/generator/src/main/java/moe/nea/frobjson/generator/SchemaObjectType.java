@@ -3,6 +3,7 @@ package moe.nea.frobjson.generator;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.palantir.javapoet.*;
+import moe.nea.frobjson.internal.JsonUtil;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
@@ -16,8 +17,9 @@ public class SchemaObjectType implements SchemaType {
 	JsonObject definition;
 	String name;
 	Set<String> requiredProps;
+	List<SchemaProperty> properties;
 	ClassName typeName;
-	NameCollection fieldNames = new NameCollection();
+	NameCollection fieldNames = new NameCollection(false);
 
 	public SchemaObjectType(
 		GenerationContext context,
@@ -25,16 +27,23 @@ public class SchemaObjectType implements SchemaType {
 		String propertyName,
 		@Nullable SchemaType parent
 	) {
-		assert "object".equals(moe.nea.frobjson.internal.JsonUtil.getStringOrNull(definition.get("type")));
+		assert "object".equals(JsonUtil.getStringOrNull(definition.get("type")));
 		this.definition = definition;
 		this.context = context;
 		this.name = context.deriveName(
 			parent,
-			moe.nea.frobjson.internal.JsonUtil.getStringOrNull(definition.get("title")),
+			JsonUtil.getStringOrNull(definition.get("title")),
 			propertyName
 		);
 		this.typeName = ClassName.get(context.packageName, name);
-		this.requiredProps = moe.nea.frobjson.internal.JsonUtil.streamOrEmpty(definition.get("required")).map(JsonElement::getAsString).collect(Collectors.toSet());
+		this.requiredProps = JsonUtil.streamOrEmpty(definition.get("required")).map(JsonElement::getAsString).collect(Collectors.toSet());
+		this.properties = JsonUtil.streamEntriesOrEmpty(definition.get("properties"))
+			.map(prop -> new SchemaProperty(
+				prop.getKey(),
+				fieldNames.allocateName(prop.getKey()),
+				context.getSchemaForProperty(prop.getKey(), prop.getValue(), this),
+				requiredProps.contains(prop.getKey())
+			)).toList();
 	}
 
 	@Override
@@ -59,10 +68,31 @@ public class SchemaObjectType implements SchemaType {
 			.addStatement("$L.append($S)", "$string", name + " { ");
 		var constructor = MethodSpec.constructorBuilder()
 			.addModifiers(Modifier.PUBLIC);
+
 		var encode = MethodSpec.methodBuilder("generateJson")
 			.returns(JsonElement.class)
-			.addModifiers(Modifier.PUBLIC)
-			.addStatement("$T $L = new $T()", JsonObject.class, "$json", JsonObject.class);
+			.addModifiers(Modifier.PUBLIC);
+		if (properties.isEmpty()) {
+			encode.addStatement("return new $T()", JsonObject.class);
+		} else {
+			encode.addStatement("$T $L = new $T()", JsonObject.class, "$json", JsonObject.class);
+			for (var prop : properties) {
+				if (!prop.required()) {
+					encode.beginControlFlow("if (this.$L != null)", prop.fieldName());
+				} else {
+					encode.beginControlFlow("");
+				}
+
+				encode
+					.addStatement("$T $L", JsonElement.class, "$jsonField")
+					.addCode(prop.type().accessSerialize("this." + prop.fieldName(), "$jsonField"))
+					.addStatement("$L.add($S, $L)", "$json", prop.propName(), "$jsonField")
+					.endControlFlow();
+			}
+			encode.addStatement("return $L", "$json");
+		}
+		cls.addMethod(encode.build());
+
 		var decode = MethodSpec.methodBuilder("fromJson")
 			.returns(typeName)
 			.addModifiers(Modifier.STATIC, Modifier.PUBLIC)
@@ -72,30 +102,28 @@ public class SchemaObjectType implements SchemaType {
 		var constructorCall = CodeBlock.builder()
 			.add("$T $L = new $T(\n", typeName, "$constructed", typeName);
 
-		var propIter = definition.getAsJsonObject("properties").entrySet().iterator();
-		while (propIter.hasNext()) {
-			var prop = propIter.next();
-			var isLast = !propIter.hasNext();
-			var propName = prop.getKey();
-			var fieldName = fieldNames.allocateName(propName);
-			var schemaType = context.getSchemaForProperty(
-				prop.getKey(),
-				prop.getValue(),
-				this
-			);
-			var fieldType = schemaType.typeName();
-			if (!requiredProps.contains(propName)) {
-				fieldType = fieldType.annotated(nullable);
-			}
+		for (var prop : properties) {
 			var field = FieldSpec.builder(
-				fieldType,
-				fieldName,
+				prop.fieldType(),
+				prop.fieldName(),
 				Modifier.PRIVATE,
 				Modifier.FINAL
 			);
-
-			schemaType.decorateField(field);
+			prop.type().decorateField(field);
 			cls.addField(field.build());
+		}
+
+		var propIter = properties.iterator();
+		var hasAnyProps = false;
+		while (propIter.hasNext()) {
+			hasAnyProps = true;
+			var prop = propIter.next();
+			var isLast = !propIter.hasNext();
+			var propName = prop.propName();
+			var fieldName = prop.fieldName();
+			var schemaType = prop.type();
+			var fieldType = prop.fieldType();
+
 			// Getter
 			cls.addMethod(MethodSpec.methodBuilder(fieldName).addModifiers(Modifier.PUBLIC).returns(fieldType).addStatement("return this.$L", fieldName).build());
 
@@ -103,18 +131,6 @@ public class SchemaObjectType implements SchemaType {
 			constructor.addParameter(fieldType, fieldName)
 				.addStatement("this.$L = $L", fieldName, fieldName);
 
-			// Encoding
-			if (!requiredProps.contains(propName)) {
-				encode.beginControlFlow("if (this.$L != null)", fieldName);
-			} else {
-				encode.beginControlFlow("");
-			}
-
-			encode
-				.addStatement("$T $L", JsonElement.class, "$jsonField")
-				.addCode(schemaType.accessSerialize("this." + fieldName, "$jsonField"))
-				.addStatement("$L.add($S, $L)", "$json", propName, "$jsonField")
-				.endControlFlow();
 
 			//ToString
 			toString.addStatement("$L.append($S).append(this.$L).append($S)", "$string", propName + "=", fieldName, ", ");
@@ -135,13 +151,12 @@ public class SchemaObjectType implements SchemaType {
 			}
 			decode.endControlFlow();
 		}
+		if (!hasAnyProps)
+			constructorCall.add(")");
 		decode.addStatement(constructorCall.build())
 			.addStatement("$L.$L = $L", "$constructed", "$json", "$json")
 			.addStatement("return $L", "$constructed");
 
-		encode.addStatement("return $L", "$json");
-
-		cls.addMethod(encode.build());
 		cls.addMethod(MethodSpec.methodBuilder("asJson")
 			.addModifiers(Modifier.PUBLIC)
 			.returns(JsonElement.class)

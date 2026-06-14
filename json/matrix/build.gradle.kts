@@ -18,6 +18,9 @@ val generateJsonSources by tasks.registering(JavaExec::class) {
 		"WellKnownProperties",
 		destinationFolder.get().asFile.absolutePath
 	)
+	this.doFirst {
+		destinationFolder.get().asFile.deleteRecursively()
+	}
 }
 val generatedJsonSource = files(generateJsonSources)
 sourceSets.main {

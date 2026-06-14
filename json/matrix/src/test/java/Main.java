@@ -19,7 +19,7 @@ void main() {
 			""", JsonObject.class)
 	);
 	System.out.println(discoveryInformation);
-	System.out.println(discoveryInformation.mhomeserver());
+	System.out.println(discoveryInformation.mHomeserver());
 	System.out.println(discoveryInformation.asJson());
 	System.out.println(discoveryInformation.generateJson());
 }

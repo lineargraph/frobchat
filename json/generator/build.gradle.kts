@@ -10,5 +10,6 @@ dependencies {
 	implementation(libs.javapoet)
 	implementation(libs.gson)
 	implementation(libs.jspecify)
+	implementation(libs.guava)
 	implementation(projects.json.library)
 }

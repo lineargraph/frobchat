@@ -15,7 +15,7 @@ public class GenerationContext {
 	}
 
 	String packageName;
-	NameCollection typeNames = new NameCollection();
+	NameCollection typeNames = new NameCollection(true);
 	List<SchemaType> allTypes = new ArrayList<>();
 	List<SchemaType> todos = new ArrayList<>();
 	List<JavaFile> files = new ArrayList<>();
@@ -25,15 +25,11 @@ public class GenerationContext {
 		@Nullable String title,
 		String propertyName) {
 		if (title != null) {
-			var candidate = typeNames.foldName(title);
-			if (!typeNames.contains(candidate)) {
-				return typeNames.allocateName(candidate);
-			}
+			return typeNames.allocateName(title);
 		}
 		var foldedPropName = typeNames.foldName(propertyName);
-		if (!typeNames.contains(foldedPropName)) return typeNames.allocateName(foldedPropName);
 		if (parent != null)
-			return typeNames.allocateName(parent.name() + foldedPropName);
+			return typeNames.allocateName(typeNames.foldName(parent.name()) + "-" + foldedPropName);
 		return typeNames.allocateName(foldedPropName);
 	}
 
@@ -54,12 +50,14 @@ public class GenerationContext {
 		return files;
 	}
 
+	// TODO: make this _lazy_
 	public SchemaType getSchemaForProperty(String propertyName, JsonElement value, @Nullable SchemaType parent) {
 		var type = value.getAsJsonObject().get("type").getAsString();
 		var schema = switch (type) {
 			case "object" -> new SchemaObjectType(this, value.getAsJsonObject(), propertyName, parent);
 			case "string" -> new SchemaStringType();
-			default -> throw new RuntimeException();
+			case "integer" -> new SchemaIntegerType();
+			default -> throw new RuntimeException("Unknown type " + type);
 		};
 		allTypes.add(schema);
 		todos.add(schema);
