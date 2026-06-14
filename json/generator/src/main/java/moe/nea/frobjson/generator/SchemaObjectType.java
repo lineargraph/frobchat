@@ -61,29 +61,30 @@ public class SchemaObjectType implements SchemaType {
 		var constructor = MethodSpec.constructorBuilder()
 			.addModifiers(Modifier.PUBLIC);
 
-		var encode = MethodSpec.methodBuilder("generateJson")
-			.returns(JsonElement.class)
-			.addModifiers(Modifier.PUBLIC);
-		if (properties.isEmpty()) {
-			encode.addStatement("return new $T()", JsonObject.class);
-		} else {
-			encode.addStatement("$T $L = new $T()", JsonObject.class, "$json", JsonObject.class);
-			for (var prop : properties) {
-				if (!prop.required()) {
-					encode.beginControlFlow("if (this.$L != null)", prop.fieldName());
-				} else {
-					encode.beginControlFlow("");
+		{
+			var encode = MethodSpec.methodBuilder("generateJson")
+				.returns(JsonElement.class)
+				.addModifiers(Modifier.PUBLIC);
+			if (properties.isEmpty()) {
+				encode.addStatement("return new $T()", JsonObject.class);
+			} else {
+				encode.addStatement("$T $L = new $T()", JsonObject.class, "$json", JsonObject.class);
+				for (var prop : properties) {
+					if (!prop.required()) {
+						encode.beginControlFlow("if (this.$L != null)", prop.fieldName());
+					} else {
+						encode.beginControlFlow("");
+					}
+
+					encode
+						.addStatement("@$T($S) $T $L = this.$L", SuppressWarnings.class, "UnnecessaryLocalVariable", prop.fieldType().withoutAnnotations(), "$field", prop.fieldName())
+						.addStatement("$L.add($S, $L)", "$json", prop.propName(), prop.type().accessSerialize("$field"))
+						.endControlFlow();
 				}
-
-				encode
-					.addStatement("@$T($S) $T $L = this.$L", SuppressWarnings.class, "UnnecessaryLocalVariable", prop.fieldType().withoutAnnotations(), "$field", prop.fieldName())
-					.addStatement("$L.add($S, $L)", "$json", prop.propName(), prop.type().accessSerialize("$field"))
-					.endControlFlow();
+				encode.addStatement("return $L", "$json");
 			}
-			encode.addStatement("return $L", "$json");
+			cls.addMethod(encode.build());
 		}
-		cls.addMethod(encode.build());
-
 		var decode = MethodSpec.methodBuilder("fromJson")
 			.returns(typeName)
 			.addModifiers(Modifier.STATIC, Modifier.PUBLIC)
