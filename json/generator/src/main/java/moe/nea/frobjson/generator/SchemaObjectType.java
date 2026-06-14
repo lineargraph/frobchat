@@ -11,6 +11,7 @@ import javax.lang.model.element.Modifier;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class SchemaObjectType implements SchemaType {
 	GenerationContext context;
@@ -46,136 +47,159 @@ public class SchemaObjectType implements SchemaType {
 			)).toList();
 	}
 
-	@Override
-	public List<JavaFile> emitFiles() {
-		var nullable = AnnotationSpec.builder(Nullable.class).build();
-		var cls = TypeSpec.classBuilder(typeName);
-		cls.addModifiers(Modifier.PUBLIC, Modifier.FINAL);
-		cls.addAnnotation(NullMarked.class)
-			.addAnnotation(AnnotationSpec.builder(SuppressWarnings.class)
-				.addMember("value", "$S", "unused").build());
-
-		cls.addField(FieldSpec.builder(TypeName.get(JsonElement.class)
-			.annotated(nullable), "$json", Modifier.PRIVATE).build());
-
-
-		{
-			var encode = MethodSpec.methodBuilder("generateJson")
-				.returns(JsonElement.class)
-				.addModifiers(Modifier.PUBLIC);
-			if (properties.isEmpty()) {
-				encode.addStatement("return new $T()", JsonObject.class);
-			} else {
-				encode.addStatement("$T $L = new $T()", JsonObject.class, "$json", JsonObject.class);
-				for (var prop : properties) {
-					if (!prop.required()) {
-						encode.beginControlFlow("if (this.$L != null)", prop.fieldName());
-					} else {
-						encode.beginControlFlow("");
-					}
-
-					encode
-						.addStatement("@$T($S) $T $L = this.$L", SuppressWarnings.class, "UnnecessaryLocalVariable", prop.fieldType().withoutAnnotations(), "$field", prop.fieldName())
-						.addStatement("$L.add($S, $L)", "$json", prop.propName(), prop.type().accessSerialize("$field"))
-						.endControlFlow();
+	MethodSpec buildGenerateJson() {
+		var encode = MethodSpec.methodBuilder("generateJson")
+			.returns(JsonElement.class)
+			.addModifiers(Modifier.PUBLIC);
+		if (properties.isEmpty()) {
+			encode.addStatement("return new $T()", JsonObject.class);
+		} else {
+			encode.addStatement("$T $L = new $T()", JsonObject.class, "$json", JsonObject.class);
+			for (var prop : properties) {
+				if (!prop.required()) {
+					encode.beginControlFlow("if (this.$L != null)", prop.fieldName());
+				} else {
+					encode.beginControlFlow("");
 				}
-				encode.addStatement("return $L", "$json");
+
+				encode
+					.addStatement("@$T($S) $T $L = this.$L", SuppressWarnings.class, "UnnecessaryLocalVariable", prop.fieldType()
+						.withoutAnnotations(), "$field", prop.fieldName())
+					.addStatement("$L.add($S, $L)", "$json", prop.propName(), prop.type().accessSerialize("$field"))
+					.endControlFlow();
 			}
-			cls.addMethod(encode.build());
+			encode.addStatement("return $L", "$json");
 		}
+		return encode.build();
+	}
+
+	FieldSpec buildField(SchemaProperty prop) {
+		var field = FieldSpec.builder(
+			prop.fieldType(),
+			prop.fieldName(),
+			Modifier.PRIVATE,
+			Modifier.FINAL
+		);
+		prop.type().decorateField(field);
+		return field.build();
+	}
+
+	MethodSpec buildConstructor() {
+		var constructor = MethodSpec.constructorBuilder()
+			.addModifiers(Modifier.PUBLIC);
 
 		for (var prop : properties) {
-			var field = FieldSpec.builder(
-				prop.fieldType(),
-				prop.fieldName(),
-				Modifier.PRIVATE,
-				Modifier.FINAL
-			);
-			prop.type().decorateField(field);
-			cls.addField(field.build());
+			constructor.addParameter(prop.fieldType(), prop.fieldName())
+				.addStatement("this.$L = $L", prop.fieldName(), prop.fieldName());
 		}
+		return constructor.build();
+	}
 
-		{
-			var constructor = MethodSpec.constructorBuilder()
-				.addModifiers(Modifier.PUBLIC);
+	MethodSpec buildToString() {
+		var toString = MethodSpec.methodBuilder("toString")
+			.addAnnotation(Override.class)
+			.addModifiers(Modifier.PUBLIC)
+			.returns(String.class)
+			.addCode("return $S\n", name + " { ");
 
-			for (var prop : properties) {
-				// Constructor
-				constructor.addParameter(prop.fieldType(), prop.fieldName())
-					.addStatement("this.$L = $L", prop.fieldName(), prop.fieldName());
+		for (var prop : properties) {
+			toString.addCode("    + $S + this.$L + $S\n", prop.propName() + "=", prop.fieldName(), ", ");
+		}
+		return toString
+			.addStatement("    + $S", "... }")
+			.build();
+	}
+
+	MethodSpec buildGetter(SchemaProperty prop) {
+		return MethodSpec.methodBuilder(prop.fieldName())
+			.addModifiers(Modifier.PUBLIC)
+			.returns(prop.fieldType())
+			.addStatement("return this.$L", prop.fieldName()).build();
+	}
+
+	MethodSpec buildDecode() {
+		var decode = MethodSpec.methodBuilder("fromJson")
+			.returns(typeName)
+			.addModifiers(Modifier.STATIC, Modifier.PUBLIC)
+			.addParameter(JsonElement.class, "$json");
+		var jsonObjectName = "$json$object";
+		decode.addStatement("$T $L = $L.getAsJsonObject()", JsonObject.class, jsonObjectName, "$json");
+		for (var prop : properties) {
+			decode.addStatement("$T $L", prop.fieldType().withoutAnnotations(), prop.fieldName())
+				.beginControlFlow("")
+				.addStatement("$T $L = $L.get($S)", JsonElement.class, "$jsonField", jsonObjectName, prop.propName());
+
+			if (!prop.required()) {
+				decode.beginControlFlow("if ($L == null)", "$jsonField")
+					.addStatement("$L = null", prop.fieldName())
+					.nextControlFlow("else")
+					.addStatement("$L = $L", prop.fieldName(), prop.type().accessDeserialize("$jsonField"))
+					.endControlFlow();
+			} else {
+				decode.addStatement("$L = $L", prop.fieldName(), prop.type().accessDeserialize("$jsonField"));
 			}
-			cls.addMethod(constructor.build());
+			decode.endControlFlow();
 		}
+		decode
+			.addCode("$T $L = new $T(\n", typeName, "$constructed", typeName)
+			.addCode(
+				properties.stream()
+					.map(it -> CodeBlock.of("    $L", it.fieldName()))
+					.collect(CodeBlock.joining(",\n")))
+			.addStatement(")")
+			.addStatement("$L.$L = $L", "$constructed", "$json", "$json")
+			.addStatement("return $L", "$constructed");
 
-		{
-			var toString = MethodSpec.methodBuilder("toString")
-				.addAnnotation(Override.class)
-				.addModifiers(Modifier.PUBLIC)
-				.returns(String.class)
-				.addCode("return $S\n", name + " { ");
+		return decode.build();
+	}
 
-			for (var prop : properties) {
-				toString.addCode("    + $S + this.$L + $S\n", prop.propName() + "=", prop.fieldName(), ", ");
-			}
-			cls.addMethod(toString
-				.addStatement("    + $S", "... }")
-				.build());
-		}
-
-		for (var props : properties) {
-			// Getter
-			cls.addMethod(MethodSpec.methodBuilder(props.fieldName()).addModifiers(Modifier.PUBLIC).returns(props.fieldType()).addStatement("return this.$L", props.fieldName()).build());
-		}
-
-		{
-			var decode = MethodSpec.methodBuilder("fromJson")
-				.returns(typeName)
-				.addModifiers(Modifier.STATIC, Modifier.PUBLIC)
-				.addParameter(JsonElement.class, "$json");
-			var jsonObjectName = "$json$object";
-			decode.addStatement("$T $L = $L.getAsJsonObject()", JsonObject.class, jsonObjectName, "$json");
-			for (var prop : properties) {
-				// Decoding
-				decode.addStatement("$T $L", prop.fieldType().withoutAnnotations(), prop.fieldName())
-					.beginControlFlow("")
-					.addStatement("$T $L = $L.get($S)", JsonElement.class, "$jsonField", jsonObjectName, prop.propName());
-
-				if (!prop.required()) {
-					decode.beginControlFlow("if ($L == null)", "$jsonField")
-						.addStatement("$L = null", prop.fieldName())
-						.nextControlFlow("else")
-						.addStatement("$L = $L", prop.fieldName(), prop.type().accessDeserialize("$jsonField"))
-						.endControlFlow();
-				} else {
-					decode.addStatement("$L = $L", prop.fieldName(), prop.type().accessDeserialize("$jsonField"));
-				}
-				decode.endControlFlow();
-			}
-			decode
-				.addCode("$T $L = new $T(\n", typeName, "$constructed", typeName)
-				.addCode(
-					properties.stream()
-						.map(it -> CodeBlock.of("    $L", it.fieldName()))
-						.collect(CodeBlock.joining(",\n")))
-				.addStatement(")")
-				.addStatement("$L.$L = $L", "$constructed", "$json", "$json")
-				.addStatement("return $L", "$constructed");
-
-			cls.addMethod(decode.build());
-		}
-		cls.addMethod(MethodSpec.methodBuilder("asJson")
+	MethodSpec buildAsJson() {
+		return MethodSpec.methodBuilder("asJson")
 			.addModifiers(Modifier.PUBLIC)
 			.returns(JsonElement.class)
 			.beginControlFlow("if (this.$L == null)", "$json")
 			.addStatement("return this.$L = this.generateJson()", "$json")
 			.endControlFlow()
 			.addStatement("return this.$L", "$json")
-			.build());
+			.build();
+	}
+
+	FieldSpec buildJsonField() {
+		return FieldSpec
+			.builder(TypeName.get(JsonElement.class)
+				.annotated(AnnotationSpec.builder(Nullable.class).build()), "$json", Modifier.PRIVATE)
+			.build();
+	}
+
+	AnnotationSpec buildSuppressWarnings(Stream<? extends String> warnings) {
+		return AnnotationSpec.builder(SuppressWarnings.class)
+			.addMember("value", warnings
+				.map(it -> CodeBlock.of("$S", it))
+				.collect(CodeBlock.joining(", ", "{", "}")))
+			.build();
+	}
+
+	@Override
+	public List<JavaFile> emitFiles() {
+		var cls = TypeSpec.classBuilder(typeName)
+			.addModifiers(Modifier.PUBLIC, Modifier.FINAL)
+			.addAnnotation(NullMarked.class)
+			.addAnnotation(buildSuppressWarnings(Stream.of("unused")))
+			.addField(buildJsonField())
+			.addFields(properties.stream().map(this::buildField).toList())
+			.addMethods(properties.stream().map(this::buildGetter).toList())
+			.addMethod(buildConstructor())
+			.addMethod(buildToString())
+			.addMethod(buildGenerateJson())
+			.addMethod(buildAsJson())
+			.addMethod(buildDecode());
+
 //		cls.addMethod(MethodSpec.methodBuilder("shallowWithoutExtras").build())
 		return List.of(JavaFile
 			.builder(context.packageName, cls.build())
 			.build());
 	}
+
 
 	@Override
 	public String name() {
