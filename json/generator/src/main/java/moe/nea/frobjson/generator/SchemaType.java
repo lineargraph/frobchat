@@ -17,9 +17,9 @@ public interface SchemaType {
 
 	List<? extends JavaFile> emitFiles();
 
-	/// _must_ emit code along the lines of `{destinationVariable} = deserialize({jsonVariable});`
-	CodeBlock accessDeserialize(String destinationVariable, String jsonVariable);
+	/// _must_ emit code along the lines of `deserialize({jsonVariable});`
+	CodeBlock accessDeserialize(String jsonVariable);
 
-	/// _must_ emit code along the lines of `{jsonVariable} = serialize({sourceVariable});`
-	CodeBlock accessSerialize(String sourceVariable, String jsonVariable);
+	/// _must_ emit code along the lines of `serialize({sourceVariable});`
+	CodeBlock accessSerialize(String sourceVariable);
 }

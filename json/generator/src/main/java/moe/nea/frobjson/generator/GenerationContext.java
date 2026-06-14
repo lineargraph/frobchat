@@ -57,6 +57,8 @@ public class GenerationContext {
 			case "object" -> new SchemaObjectType(this, value.getAsJsonObject(), propertyName, parent);
 			case "string" -> new SchemaStringType();
 			case "integer" -> new SchemaIntegerType();
+			case "array" ->
+				new SchemaArrayType(getSchemaForProperty(propertyName, value.getAsJsonObject().get("items"), parent));
 			default -> throw new RuntimeException("Unknown type " + type);
 		};
 		allTypes.add(schema);

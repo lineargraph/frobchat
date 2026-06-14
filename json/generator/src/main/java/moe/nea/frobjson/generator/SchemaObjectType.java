@@ -84,9 +84,8 @@ public class SchemaObjectType implements SchemaType {
 				}
 
 				encode
-					.addStatement("$T $L", JsonElement.class, "$jsonField")
-					.addCode(prop.type().accessSerialize("this." + prop.fieldName(), "$jsonField"))
-					.addStatement("$L.add($S, $L)", "$json", prop.propName(), "$jsonField")
+					.addStatement("@$T($S) $T $L = this.$L", SuppressWarnings.class, "UnnecessaryLocalVariable", prop.fieldType().withoutAnnotations(), "$field", prop.fieldName())
+					.addStatement("$L.add($S, $L)", "$json", prop.propName(), prop.type().accessSerialize("$field"))
 					.endControlFlow();
 			}
 			encode.addStatement("return $L", "$json");
@@ -144,10 +143,10 @@ public class SchemaObjectType implements SchemaType {
 				decode.beginControlFlow("if ($L == null)", "$jsonField")
 					.addStatement("$L = null", fieldName)
 					.nextControlFlow("else")
-					.addCode(schemaType.accessDeserialize(fieldName, "$jsonField"))
+					.addStatement("$L = $L", fieldName, schemaType.accessDeserialize("$jsonField"))
 					.endControlFlow();
 			} else {
-				decode.addCode(schemaType.accessDeserialize(fieldName, "$jsonField"));
+				decode.addStatement("$L = $L", fieldName, schemaType.accessDeserialize("$jsonField"));
 			}
 			decode.endControlFlow();
 		}
@@ -188,12 +187,12 @@ public class SchemaObjectType implements SchemaType {
 	}
 
 	@Override
-	public CodeBlock accessDeserialize(String destinationVariable, String jsonVariable) {
-		return CodeBlock.of("$L = $T.fromJson($L);\n", destinationVariable, typeName, jsonVariable);
+	public CodeBlock accessDeserialize(String jsonVariable) {
+		return CodeBlock.of("$T.fromJson($L)", typeName, jsonVariable);
 	}
 
 	@Override
-	public CodeBlock accessSerialize(String sourceVariable, String jsonVariable) {
-		return CodeBlock.of("$L = $L.asJson();\n", jsonVariable, sourceVariable);
+	public CodeBlock accessSerialize(String sourceVariable) {
+		return CodeBlock.of("$L.asJson()", sourceVariable);
 	}
 }

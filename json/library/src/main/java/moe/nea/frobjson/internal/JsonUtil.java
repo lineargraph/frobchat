@@ -31,6 +31,12 @@ public class JsonUtil {
 		return StreamSupport.stream(array.spliterator(), false);
 	}
 
+	public static JsonArray unstream(Stream<? extends JsonElement> stream) {
+		var jsonArray = new JsonArray();
+		stream.forEach(jsonArray::add);
+		return jsonArray;
+	}
+
 	public static Stream<JsonElement> streamOrEmpty(@Nullable JsonElement element) {
 		if (element == null) return Stream.empty();
 		return stream((JsonArray) element);

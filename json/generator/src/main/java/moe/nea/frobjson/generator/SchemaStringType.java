@@ -25,12 +25,12 @@ public class SchemaStringType implements SchemaType {
 	}
 
 	@Override
-	public CodeBlock accessDeserialize(String destinationVariable, String jsonVariable) {
-		return CodeBlock.of("$L = $L.getAsString();\n", destinationVariable, jsonVariable);
+	public CodeBlock accessDeserialize(String jsonVariable) {
+		return CodeBlock.of("$L.getAsString()", jsonVariable);
 	}
 
 	@Override
-	public CodeBlock accessSerialize(String sourceVariable, String jsonVariable) {
-		return CodeBlock.of("$L = new $T($L);\n", jsonVariable, JsonPrimitive.class, sourceVariable);
+	public CodeBlock accessSerialize(String sourceVariable) {
+		return CodeBlock.of("new $T($L)", JsonPrimitive.class, sourceVariable);
 	}
 }
