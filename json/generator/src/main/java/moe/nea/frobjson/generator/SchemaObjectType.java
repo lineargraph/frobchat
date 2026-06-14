@@ -58,8 +58,6 @@ public class SchemaObjectType implements SchemaType {
 		cls.addField(FieldSpec.builder(TypeName.get(JsonElement.class)
 			.annotated(nullable), "$json", Modifier.PRIVATE).build());
 
-		var constructor = MethodSpec.constructorBuilder()
-			.addModifiers(Modifier.PUBLIC);
 
 		{
 			var encode = MethodSpec.methodBuilder("generateJson")
@@ -91,8 +89,6 @@ public class SchemaObjectType implements SchemaType {
 			.addParameter(JsonElement.class, "$json");
 		var jsonObjectName = "$json$object";
 		decode.addStatement("$T $L = $L.getAsJsonObject()", JsonObject.class, jsonObjectName, "$json");
-		var constructorCall = CodeBlock.builder()
-			.add("$T $L = new $T(\n", typeName, "$constructed", typeName);
 
 		for (var prop : properties) {
 			var field = FieldSpec.builder(
@@ -104,6 +100,20 @@ public class SchemaObjectType implements SchemaType {
 			prop.type().decorateField(field);
 			cls.addField(field.build());
 		}
+
+		{
+			var constructor = MethodSpec.constructorBuilder()
+				.addModifiers(Modifier.PUBLIC);
+
+			for (var prop : properties) {
+				// Constructor
+				constructor.addParameter(prop.fieldType(), prop.fieldName())
+					.addStatement("this.$L = $L", prop.fieldName(), prop.fieldName());
+			}
+			cls.addMethod(constructor.build());
+		}
+		var constructorCall = CodeBlock.builder()
+			.add("$T $L = new $T(\n", typeName, "$constructed", typeName);
 
 		{
 			var toString = MethodSpec.methodBuilder("toString")
@@ -133,15 +143,12 @@ public class SchemaObjectType implements SchemaType {
 			// Getter
 			cls.addMethod(MethodSpec.methodBuilder(fieldName).addModifiers(Modifier.PUBLIC).returns(fieldType).addStatement("return this.$L", fieldName).build());
 
-			// Constructor
-			constructor.addParameter(fieldType, fieldName)
-				.addStatement("this.$L = $L", fieldName, fieldName);
-
 			// Decoding
 			constructorCall.add("$L" + (isLast ? ")" : ",\n"), fieldName);
 			decode.addStatement("$T $L", fieldType.withoutAnnotations(), fieldName)
 				.beginControlFlow("")
 				.addStatement("$T $L = $L.get($S)", JsonElement.class, "$jsonField", jsonObjectName, propName);
+
 			if (!requiredProps.contains(propName)) {
 				decode.beginControlFlow("if ($L == null)", "$jsonField")
 					.addStatement("$L = null", fieldName)
@@ -168,7 +175,6 @@ public class SchemaObjectType implements SchemaType {
 			.addStatement("return this.$L", "$json")
 			.build());
 		cls.addMethod(decode.build());
-		cls.addMethod(constructor.build());
 //		cls.addMethod(MethodSpec.methodBuilder("shallowWithoutExtras").build())
 		return List.of(JavaFile
 			.builder(context.packageName, cls.build())
