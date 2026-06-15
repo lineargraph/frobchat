@@ -23,6 +23,11 @@ public class SchemaObjectType implements SchemaType {
 	ClassName typeName;
 	NameCollection fieldNames = new NameCollection(false);
 
+	@Override
+	public String toString() {
+		return "Object[" + name + "]";
+	}
+
 	public SchemaObjectType(
 		GenerationContext context,
 		JsonObject definition,
@@ -32,11 +37,7 @@ public class SchemaObjectType implements SchemaType {
 		assert "object".equals(JsonUtil.getStringOrNull(definition.get("type")));
 		this.definition = definition;
 		this.context = context;
-		this.name = context.deriveName(
-			parent,
-			JsonUtil.getStringOrNull(definition.get("title")),
-			propertyName
-		);
+		this.name = context.typeNames.allocateName(context.guessName(propertyName, parent, definition));
 		this.typeName = ClassName.get(context.packageName, name);
 		this.requiredProps = JsonUtil.streamOrEmpty(definition.get("required")).map(JsonElement::getAsString).collect(Collectors.toSet());
 		this.properties = JsonUtil.streamEntriesOrEmpty(definition.get("properties"))

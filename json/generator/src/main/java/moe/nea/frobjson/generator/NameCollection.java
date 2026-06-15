@@ -15,7 +15,7 @@ public class NameCollection {
 		this.classNames = classNames;
 	}
 
-	final static Splitter splitter = Splitter.on(Pattern.compile("[\\-._ ]+|(?<=[a-z0-9])(?=[A-Z])"));
+	final static Splitter splitter = Splitter.on(Pattern.compile("[\\-._ :]+|(?<=[a-z0-9])(?=[A-Z])"));
 
 	public static void capitalize(StringBuilder appendable, String name) {
 		if (name.isEmpty()) return;
@@ -33,6 +33,8 @@ public class NameCollection {
 			else
 				b.append(s.toLowerCase(Locale.ROOT));
 		}
+		if ("default".contentEquals(b))
+			return "default_";
 		return b.toString();
 	}
 
@@ -40,7 +42,9 @@ public class NameCollection {
 		name = foldName(name);
 		for (int j = 1; ; j++) {
 			var candidate = j <= 1 ? name : name + j;
-			if (names.contains(candidate)) continue;
+			if (names.contains(candidate)) {
+				continue;
+			}
 			names.add(candidate);
 			return candidate;
 		}

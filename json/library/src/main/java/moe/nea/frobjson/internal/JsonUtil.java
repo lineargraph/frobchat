@@ -12,6 +12,7 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collector;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -19,6 +20,14 @@ import java.util.stream.StreamSupport;
 @NullMarked
 public class JsonUtil {
 	private JsonUtil() {
+	}
+
+	public static <T extends @Nullable Object> @Nullable T catch_(Supplier<? extends T> supp) {
+		try {
+			return supp.get();
+		} catch (RuntimeException e) {
+			return null;
+		}
 	}
 
 	public static @Nullable String getStringOrNull(@Nullable JsonElement element) {
@@ -70,6 +79,28 @@ public class JsonUtil {
 		}
 		if (!a.equals(b)) throw new RuntimeException("Mismatched merging " + a + " <- " + b);
 		return a;
+	}
+
+	@Contract(mutates = "param1")
+	public static JsonElement mergeVariantOverriding(JsonElement a, JsonElement b) {
+		if (a instanceof JsonObject object) {
+			for (var prop : b.getAsJsonObject().entrySet()) {
+				var left = object.get(prop.getKey());
+				var right = prop.getValue();
+				if (left == null)
+					object.add(prop.getKey(), right);
+				else
+					object.add(prop.getKey(), mergeVariantOverriding(left, right));
+			}
+			return object;
+		}
+		return b;
+	}
+
+	public static JsonObject jsonObjectOrEmpty(@Nullable JsonElement content) {
+		if (content == null)
+			return new JsonObject();
+		return content.getAsJsonObject();
 	}
 
 	public interface ThrowingProvider<T> {
