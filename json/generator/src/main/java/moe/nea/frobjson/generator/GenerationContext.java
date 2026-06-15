@@ -16,10 +16,13 @@ import java.util.stream.Collectors;
 public class GenerationContext {
 	public GenerationContext(String packageName) {
 		this.packageName = packageName;
+		this.operationPackageName = packageName;
 	}
 
 	String packageName;
+	public String operationPackageName;
 	NameCollection typeNames = new NameCollection(true);
+	public NameCollection operationTypeNames = new NameCollection(true);
 	List<SchemaType> allTypes = new ArrayList<>();
 	List<SchemaType> todos = new ArrayList<>();
 	List<JavaFile> files = new ArrayList<>();

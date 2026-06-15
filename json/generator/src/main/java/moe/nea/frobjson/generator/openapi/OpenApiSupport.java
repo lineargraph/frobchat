@@ -39,7 +39,7 @@ public class OpenApiSupport {
 								var responseSchema = ctx.getSchemaForProperty(operationName + statusSuffix, json.getAsJsonObject().get("schema"), null);
 								return Map.entry(Integer.parseInt(status.getKey()), new OpenApiResponse(description, responseSchema));
 							}
-							// TODO: thing
+							// TODO: other response content types
 							return null;
 						})
 						.filter(Objects::nonNull)
@@ -82,6 +82,6 @@ public class OpenApiSupport {
 						responses
 					);
 				}))
-			.map(OpenApiOperation::emitJavaFile);
+			.map(it -> it.emitJavaFile(ctx));
 	}
 }

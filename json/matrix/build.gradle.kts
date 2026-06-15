@@ -14,7 +14,7 @@ val generateJsonSources by tasks.registering(JavaExec::class) {
 	this.outputs.dir(destinationFolder)
 	this.args(
 		schemaFile.absolutePath,
-		"moe.nea.frobchat.model",
+		"moe.nea.frobchat.matrixapi",
 		destinationFolder.get().asFile.absolutePath
 	)
 	this.doFirst {

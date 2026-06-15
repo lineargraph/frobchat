@@ -2,6 +2,7 @@ package moe.nea.frobjson.generator.openapi;
 
 import com.google.gson.JsonElement;
 import com.palantir.javapoet.*;
+import moe.nea.frobjson.generator.GenerationContext;
 import moe.nea.frobjson.generator.NameCollection;
 import moe.nea.frobjson.generator.SchemaStringType;
 import moe.nea.frobjson.generator.TypeUtils;
@@ -26,10 +27,9 @@ public record OpenApiOperation(
 	Map<Integer, OpenApiResponse> responses
 ) {
 
-	public JavaFile emitJavaFile() {
-		NameCollection operationNames = new NameCollection(true);
-		String packageName = "moe.nea.operations";
-		var clsName = ClassName.get(packageName, operationNames.allocateName(operationId));
+	public JavaFile emitJavaFile(GenerationContext ctx) {
+		String packageName = ctx.operationPackageName;
+		var clsName = ClassName.get(packageName, ctx.operationTypeNames.allocateName(operationId));
 		var operationCls = TypeSpec.classBuilder(clsName)
 			.addAnnotation(NullMarked.class)
 			.addModifiers(Modifier.PUBLIC, Modifier.FINAL);

@@ -16,7 +16,8 @@ public class GenerateOpenApiSchemas {
 		var sourceFile = Path.of(args[0]);
 		var packageName = args[1];
 		var destinationDirectory = Path.of(args[2]);
-		var ctx = new GenerationContext(packageName);
+		var ctx = new GenerationContext(packageName + ".models");
+		ctx.operationPackageName = packageName + ".operations";
 
 		JsonElement openApiJson;
 		try (var input = Files.newBufferedReader(sourceFile, StandardCharsets.UTF_8)) {
