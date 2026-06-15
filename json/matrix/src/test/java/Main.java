@@ -11,6 +11,6 @@ void main() {
 	);
 	var result = client.executeOperation(GetWellknown.INSTANCE, new GetWellknown.Parameters(), Operation.EMPTY_BODY)
 		.join();
-	var body = ((GetWellknown.Status200) result.body()).body();
+	var body = result.body().body();
 	System.out.println(body.mHomeserver());
 }

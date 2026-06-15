@@ -35,7 +35,7 @@ public record OpenApiOperation(
 			.addAnnotation(NullMarked.class)
 			.addModifiers(Modifier.PUBLIC, Modifier.FINAL);
 
-		var responsesTyp = clsName.nestedClass("Responses");
+		var responsesTyp = clsName.nestedClass("Response");
 		var parametersTyp = clsName.nestedClass("Parameters");
 
 		TypeName bodyType = ClassName.get(Operation.EmptyBody.class);
@@ -48,17 +48,30 @@ public record OpenApiOperation(
 		var parameterCls = buildParameterClass(parametersTyp);
 
 
-		// TODO: remove StatusUnknown
+		if (responses.isEmpty()) {
+			operationCls
+				.addType(TypeSpec.recordBuilder(responsesTyp.simpleName())
+					.addModifiers(Modifier.PUBLIC)
+					.addMethod(MethodSpec
+						.methodBuilder("fromStatus")
+						.addModifiers(Modifier.PUBLIC, Modifier.STATIC)
+						.addParameter(int.class, "statusCode")
+						.addParameter(JsonElement.class, "json") // TODO: support non json responses
+						.returns(responsesTyp)
+						.addStatement("return new $T()", responsesTyp)
+						.build())
+					.build());
+		} else if (responses.size() == 1) {
+			var e = responses.entrySet().iterator().next();
+			operationCls.addType(buildResponse(e.getKey(), e.getValue(), responsesTyp, null));
+		} else {
+			operationCls
+				.addTypes(responses.entrySet().stream().map(responseE ->
+					buildResponse(responseE.getKey(), responseE.getValue(), clsName.nestedClass("Status" + responseE.getKey()), responsesTyp)).toList())
+				.addType(buildResponseSuperclass(responsesTyp, clsName));
+		}
+
 		operationCls
-			.addTypes(responses.entrySet().stream().map(responseE -> buildResponse(responseE.getKey(), responseE.getValue(), clsName, responsesTyp)).toList())
-			.addType(TypeSpec.recordBuilder("StatusUnknown")
-				.recordConstructor(MethodSpec.constructorBuilder()
-					.addParameter(int.class, "statusCode")
-					.build())
-				.addSuperinterface(responsesTyp)
-				.addModifiers(Modifier.PUBLIC)
-				.build())
-			.addType(buildResponseSuperclass(responsesTyp, clsName))
 			.addType(parameterCls)
 			.addMethod(MethodSpec.constructorBuilder()
 				.addModifiers(Modifier.PRIVATE).build())
@@ -104,9 +117,7 @@ public record OpenApiOperation(
 			.addPermittedSubclasses(
 				responses.keySet().stream()
 					.map(it -> clsName.nestedClass("Status" + it))
-					.toList()
-			)
-			.addPermittedSubclass(clsName.nestedClass("StatusUnknown"))
+					.toList())
 			.addMethod(MethodSpec
 				.methodBuilder("fromStatus")
 				.addModifiers(Modifier.PUBLIC, Modifier.STATIC)
@@ -119,7 +130,7 @@ public record OpenApiOperation(
 						.map(integer -> CodeBlock.of("case $L -> $T.from($L);\n", integer, clsName.nestedClass("Status" + integer), "json"))
 						.collect(CodeBlock.joining(""))
 				)
-				.addStatement("default -> new $T(statusCode)", clsName.nestedClass("StatusUnknown"))
+				.addStatement("default -> throw new $T($S + statusCode)", RuntimeException.class, "Unknown status code: ")
 				.endControlFlow("")
 				.build())
 			.build();
@@ -149,23 +160,36 @@ public record OpenApiOperation(
 	}
 
 	private static TypeSpec buildResponse(
-		int statusCode, OpenApiResponse response, ClassName clsName,
-		ClassName responsesTyp) {
-		var self = clsName.nestedClass("Status" + statusCode);
-		return TypeSpec
-			.recordBuilder(self.simpleName())
+		int statusCode,
+		OpenApiResponse response, ClassName clsName,
+		ClassName superTyp) {
+		var builder = TypeSpec
+			.recordBuilder(clsName.simpleName())
 			.recordConstructor(MethodSpec.constructorBuilder()
 				.addParameter(response.schema().typeName(), "body")
 				.build())
-			.addSuperinterface(responsesTyp)
 			.addModifiers(Modifier.PUBLIC)
+			.addMethod(MethodSpec
+				.methodBuilder("fromStatus")
+				.addModifiers(Modifier.PUBLIC, Modifier.STATIC)
+				.addParameter(int.class, "statusCode")
+				.addParameter(JsonElement.class, "json") // TODO: support non json responses
+				.returns(clsName)
+				.beginControlFlow("if (statusCode != $L)", statusCode)
+				.addStatement("throw new $T($S + statusCode)", RuntimeException.class, "Unknown status code: ")
+				.endControlFlow()
+				.addStatement("return $T.from(json)", clsName)
+				.build())
 			.addMethod(MethodSpec.methodBuilder("from")
-				.returns(self)
+				.returns(clsName)
 				.addModifiers(Modifier.PUBLIC, Modifier.STATIC)
 				.addParameter(JsonElement.class, "json")
-				.addStatement("return new $T($L)", self, response.schema().accessDeserialize("json"))
-				.build())
-			.build();
+				.addStatement("return new $T($L)", clsName, response.schema().accessDeserialize("json"))
+				.build());
+		if (superTyp != null)
+			builder.addSuperinterface(superTyp);
+
+		return builder.build();
 	}
 
 	private TypeSpec buildParameterClass(ClassName parametersTyp) {
