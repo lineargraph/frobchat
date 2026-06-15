@@ -117,7 +117,7 @@ public class SchemaObjectType implements SchemaType {
 			.returns(prop.fieldType())
 			.addStatement("return this.$L", prop.fieldName());
 		if (prop.description() != null)
-			spec.addJavadoc("$L", prop.description());
+			spec.addJavadoc("$L", TypeUtils.formatJavadoc(prop.description()));
 		if (prop.deprecated())
 			spec.addAnnotation(Deprecated.class);
 		return spec.build();

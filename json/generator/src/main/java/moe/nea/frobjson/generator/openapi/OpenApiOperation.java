@@ -35,6 +35,11 @@ public record OpenApiOperation(
 			.addAnnotation(NullMarked.class)
 			.addModifiers(Modifier.PUBLIC, Modifier.FINAL);
 
+		if (summary != null)
+			operationCls.addJavadoc("$L\n<br>\n", summary);
+		if (description != null)
+			operationCls.addJavadoc("$L", TypeUtils.formatJavadoc(description));
+
 		var responsesTyp = clsName.nestedClass("Response");
 		var parametersTyp = clsName.nestedClass("Parameters");
 
