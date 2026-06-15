@@ -3,6 +3,7 @@ package moe.nea.frobjson.internal;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
 import org.jetbrains.annotations.Contract;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.NullMarked;
@@ -101,6 +102,10 @@ public class JsonUtil {
 		if (content == null)
 			return new JsonObject();
 		return content.getAsJsonObject();
+	}
+
+	public static boolean getBooleanOrFalse(@Nullable JsonElement element) {
+		return element != null && element.getAsBoolean();
 	}
 
 	public interface ThrowingProvider<T> {

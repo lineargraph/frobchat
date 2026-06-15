@@ -12,6 +12,7 @@ public record SchemaProperty(
 	String fieldName,
 	SchemaType type,
 	@Nullable String description,
+	boolean deprecated,
 	boolean required
 ) {
 	TypeName fieldType() {

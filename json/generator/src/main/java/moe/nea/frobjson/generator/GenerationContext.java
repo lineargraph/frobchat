@@ -10,10 +10,7 @@ import org.jspecify.annotations.Nullable;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class GenerationContext {
 	public GenerationContext(String packageName) {
@@ -121,21 +118,26 @@ public class GenerationContext {
 	) {
 	}
 
-	public JsonElement cleanValue(JsonElement element) {
+	public JsonElement cleanValue(JsonElement element, boolean deep) {
 		if (element instanceof JsonObject obj) {
-			var ignoredKeys = List.of("description", "example", "deprecated");
+			var ignoredKeys = new HashSet<>(List.of("description", "example", "deprecated"));
+			if (deep) {
+				ignoredKeys.remove("description");
+				ignoredKeys.remove("deprecated");
+			}
+
 			var obj2 = new JsonObject();
 			obj.entrySet()
 				.stream()
 				.filter(it -> !it.getKey().startsWith("x-"))
 				.filter(it -> !ignoredKeys.contains(it.getKey()))
-				.forEach(it -> obj2.add(it.getKey(), cleanValue(it.getValue())));
+				.forEach(it -> obj2.add(it.getKey(), cleanValue(it.getValue(), true)));
 
 			return obj2;
 		}
 		if (element instanceof JsonArray arr) {
 			return JsonUtil.unstream(JsonUtil.stream(arr)
-				.map(this::cleanValue));
+				.map(it -> cleanValue(it, true)));
 		}
 		return element;
 	}
@@ -143,7 +145,7 @@ public class GenerationContext {
 	public SchemaType getSchemaForProperty(String propertyName, JsonElement value, @Nullable SchemaType parent) {
 		var schema =
 			schemaCache.computeIfAbsent(
-				new SchemaKey(cleanValue(value), guessName(propertyName, parent, value)),
+				new SchemaKey(cleanValue(value, false), guessName(propertyName, parent, value)),
 				key -> new LazySchema(() -> {
 					System.err.println("DEBUG: " + key);
 					try {

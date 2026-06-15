@@ -41,13 +41,17 @@ public class SchemaObjectType implements SchemaType {
 		this.typeName = ClassName.get(context.packageName, name);
 		this.requiredProps = JsonUtil.streamOrEmpty(definition.get("required")).map(JsonElement::getAsString).collect(Collectors.toSet());
 		this.properties = JsonUtil.streamEntriesOrEmpty(definition.get("properties"))
-			.map(prop -> new SchemaProperty(
-				prop.getKey(),
-				fieldNames.allocateName(prop.getKey()),
-				context.getSchemaForProperty(prop.getKey(), prop.getValue(), this),
-				JsonUtil.getStringOrNull(prop.getValue().getAsJsonObject().get("description")),
-				requiredProps.contains(prop.getKey())
-			)).toList();
+			.map(prop -> {
+				var obj = prop.getValue().getAsJsonObject();
+				return new SchemaProperty(
+					prop.getKey(),
+					fieldNames.allocateName(prop.getKey()),
+					context.getSchemaForProperty(prop.getKey(), prop.getValue(), this),
+					JsonUtil.getStringOrNull(obj.get("description")),
+					JsonUtil.getBooleanOrFalse(obj.get("deprecated")),
+					requiredProps.contains(prop.getKey())
+				);
+			}).toList();
 	}
 
 	MethodSpec buildGenerateJson() {
@@ -108,10 +112,15 @@ public class SchemaObjectType implements SchemaType {
 	}
 
 	MethodSpec buildGetter(SchemaProperty prop) {
-		return MethodSpec.methodBuilder(prop.fieldName())
+		var spec = MethodSpec.methodBuilder(prop.fieldName())
 			.addModifiers(Modifier.PUBLIC)
 			.returns(prop.fieldType())
-			.addStatement("return this.$L", prop.fieldName()).build();
+			.addStatement("return this.$L", prop.fieldName());
+		if (prop.description() != null)
+			spec.addJavadoc("$L", prop.description());
+		if (prop.deprecated())
+			spec.addAnnotation(Deprecated.class);
+		return spec.build();
 	}
 
 	MethodSpec buildDecode() {
