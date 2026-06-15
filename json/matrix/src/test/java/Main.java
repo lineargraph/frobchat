@@ -1,17 +1,17 @@
 import com.google.gson.Gson;
-import com.google.gson.JsonObject;
-import moe.nea.frobchat.model.Contact;
+import moe.nea.frobjson.openapi.Operation;
+import moe.nea.frobjson.openapi.client.JavaHttpClient;
+import moe.nea.operations.GetWellknown;
 
-import moe.nea.frobchat.model.WellKnownProperties;
-
-import java.util.List;
+import java.net.http.HttpClient;
 
 void main() {
-	var wellKnownProperties = new WellKnownProperties(
-		List.of(new Contact("nea@nea.moe", null, "admin")),
-		"https://matrix.nea.moe"
+	var client = new JavaHttpClient(
+		"https://matrix.nea.moe",
+		HttpClient.newBuilder().build()
 	);
-	IO.println(wellKnownProperties);
-	IO.println(wellKnownProperties.asJson());
-	IO.println(WellKnownProperties.fromJson(wellKnownProperties.asJson()));
+	var result = client.executeOperation(GetWellknown.INSTANCE, new GetWellknown.Parameters(), Operation.EMPTY_BODY)
+		.join();
+	System.out.println(result.body());
+	System.out.println(((GetWellknown.Status200) result.body()).body().asJson());
 }

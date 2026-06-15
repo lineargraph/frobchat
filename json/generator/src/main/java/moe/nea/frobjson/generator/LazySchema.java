@@ -13,6 +13,11 @@ public class LazySchema implements SchemaType {
 	@Nullable SchemaType instance = null;
 	Supplier<? extends SchemaType> supp;
 
+	@Override
+	public SchemaType unlazy() {
+		return get().unlazy();
+	}
+
 	public LazySchema(Supplier<? extends SchemaType> supp) {
 		this.supp = supp;
 	}

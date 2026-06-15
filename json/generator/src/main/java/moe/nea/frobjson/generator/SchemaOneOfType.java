@@ -5,6 +5,7 @@ import com.google.gson.JsonObject;
 import com.palantir.javapoet.*;
 import moe.nea.frobjson.internal.JsonUtil;
 import moe.nea.frobjson.internal.SchemaAllOf;
+import moe.nea.frobjson.internal.SchemaOneOf;
 import moe.nea.frobjson.internal.StreamUtil;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
@@ -54,7 +55,8 @@ public class SchemaOneOfType implements SchemaType {
 	public List<? extends JavaFile> emitFiles() {
 		var cls = TypeSpec.classBuilder(typeName)
 			.addAnnotation(NullMarked.class)
-			.addSuperinterface(SchemaAllOf.class)
+			.addModifiers(Modifier.PUBLIC, Modifier.FINAL)
+			.addSuperinterface(SchemaOneOf.class)
 			.addFields(variants
 				.stream()
 				.map(it -> FieldSpec.builder(it.fieldType(), it.fieldName(), Modifier.PRIVATE, Modifier.FINAL)

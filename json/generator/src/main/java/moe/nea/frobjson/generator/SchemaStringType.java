@@ -10,7 +10,7 @@ import moe.nea.frobjson.internal.JsonUtil;
 
 import java.util.List;
 
-public class SchemaStringType implements SchemaType {
+public record SchemaStringType() implements SchemaType {
 	@Override
 	public String name() {
 		return "String";

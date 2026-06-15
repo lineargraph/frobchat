@@ -29,8 +29,10 @@ public record SchemaArrayType(
 	@Override
 	public CodeBlock deserializeLambda(String variableName) {
 		return CodeBlock.of(
-			"$T.liftArray($L, $T.toList())",
+			"$T.<$T, $T>liftArray($L, $T.toList())",
 			JsonUtil.class,
+			items.typeName(),
+			typeName(),
 			items.deserializeLambda(variableName + "$inner"),
 			Collectors.class
 		);
@@ -48,8 +50,9 @@ public record SchemaArrayType(
 	@Override
 	public CodeBlock serializeLambda(String variableName) {
 		return CodeBlock.of(
-			"$T.liftUnArray($L)",
+			"$T.<$T>liftUnArray($L)",
 			JsonUtil.class,
+			items.typeName(),
 			items.serializeLambda(variableName + "$inner")
 		);
 	}

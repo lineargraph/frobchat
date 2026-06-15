@@ -8,6 +8,10 @@ import com.palantir.javapoet.TypeName;
 import java.util.List;
 
 public interface SchemaType {
+	default SchemaType unlazy() {
+		return this;
+	}
+
 	String name();
 
 	TypeName typeName();

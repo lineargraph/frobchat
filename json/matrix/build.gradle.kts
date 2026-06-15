@@ -17,7 +17,6 @@ val generateJsonSources by tasks.registering(JavaExec::class) {
 		"moe.nea.frobchat.model",
 		destinationFolder.get().asFile.absolutePath
 	)
-	outputs.upToDateWhen { false }
 	this.doFirst {
 		destinationFolder.get().asFile.deleteRecursively()
 	}

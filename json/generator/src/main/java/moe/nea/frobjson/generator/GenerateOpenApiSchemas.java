@@ -2,6 +2,7 @@ package moe.nea.frobjson.generator;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
+import moe.nea.frobjson.generator.openapi.OpenApiSupport;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -22,7 +23,14 @@ public class GenerateOpenApiSchemas {
 			openApiJson = new Gson().fromJson(input, JsonElement.class);
 		}
 
-		OpenApiSupport.generateAllSchemasFromOpenApi(ctx, openApiJson);
+		OpenApiSupport.generateAllSchemasFromOpenApi(ctx, openApiJson)
+			.forEach(it -> {
+				try {
+					it.writeTo(destinationDirectory);
+				} catch (IOException e) {
+					throw new RuntimeException(e);
+				}
+			});
 
 		ctx.writeClosure(destinationDirectory);
 	}

@@ -11,6 +11,7 @@ import org.jspecify.annotations.Nullable;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class GenerationContext {
 	public GenerationContext(String packageName) {
@@ -77,14 +78,18 @@ public class GenerationContext {
 		}
 		var oneOf = obj.getAsJsonArray("oneOf");
 		if (oneOf != null) {
+			var types = JsonUtil.stream(oneOf)
+				.map(StreamUtil.withIndex())
+				.map(it -> getSchemaForProperty(propertyName + it.index(), it.value(), parent))
+				.map(SchemaType::unlazy)
+				.collect(Collectors.toCollection(LinkedHashSet::new));
+			if (types.size() == 1)
+				return types.getFirst();
+			System.out.println("Could not merge type " + types);
 			return new SchemaOneOfType(
 				this,
 				typeNames.allocateName(guessName(propertyName, parent, obj)),
-				JsonUtil.stream(oneOf)
-					.map(StreamUtil.withIndex())
-					.map(it -> getSchemaForProperty(propertyName + it.index(), it.value(), parent))
-					.toList()
-			);
+				new ArrayList<>(types));
 		}
 		if (obj.entrySet()
 			.stream()
@@ -106,7 +111,7 @@ public class GenerationContext {
 			case "boolean" -> new SchemaBooleanType();
 			case "number" -> new SchemaNumberType();
 			case "array" -> new SchemaArrayType(getSchemaForProperty(propertyName, obj.get("items"), parent));
-			default -> throw new RuntimeException("Unknown type " + type);
+			default -> throw new RuntimeException("Unknown schema " + type);
 		};
 	}
 
@@ -147,7 +152,6 @@ public class GenerationContext {
 			schemaCache.computeIfAbsent(
 				new SchemaKey(cleanValue(value, false), guessName(propertyName, parent, value)),
 				key -> new LazySchema(() -> {
-					System.err.println("DEBUG: " + key);
 					try {
 						return constructSchema(propertyName, value, parent);
 					} catch (Throwable e) {
@@ -156,6 +160,7 @@ public class GenerationContext {
 					}
 				})
 			);
+		schema.get(); // Force instantiation, we only need lazy to deal with potential cycles
 		allTypes.add(schema);
 		todos.add(schema);
 		return schema;
