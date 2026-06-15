@@ -1,6 +1,5 @@
 package moe.nea.frobjson.generator;
 
-import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
 
 import java.util.HashSet;
@@ -28,6 +27,7 @@ public class NameCollection {
 	public String foldName(String name) {
 		StringBuilder b = new StringBuilder();
 		for (String s : splitter.split(name)) {
+			if (s.isEmpty()) continue;
 			if (!b.isEmpty() || classNames)
 				capitalize(b, s);
 			else
