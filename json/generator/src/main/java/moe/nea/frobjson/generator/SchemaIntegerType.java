@@ -1,5 +1,6 @@
 package moe.nea.frobjson.generator;
 
+import com.google.gson.JsonElement;
 import com.google.gson.JsonPrimitive;
 import com.palantir.javapoet.ClassName;
 import com.palantir.javapoet.CodeBlock;
@@ -22,6 +23,16 @@ public class SchemaIntegerType implements SchemaType {
 	@Override
 	public List<? extends JavaFile> emitFiles() {
 		return List.of();
+	}
+
+	@Override
+	public CodeBlock serializeLambda(String variableName) {
+		return CodeBlock.of("$T::new", JsonPrimitive.class);
+	}
+
+	@Override
+	public CodeBlock deserializeLambda(String variableName) {
+		return CodeBlock.of("$T::getAsInt", JsonElement.class);
 	}
 
 	@Override

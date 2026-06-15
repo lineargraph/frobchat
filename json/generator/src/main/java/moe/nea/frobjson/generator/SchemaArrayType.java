@@ -6,6 +6,7 @@ import moe.nea.frobjson.internal.JsonUtil;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 public record SchemaArrayType(
 	SchemaType items
@@ -26,24 +27,39 @@ public record SchemaArrayType(
 	}
 
 	@Override
+	public CodeBlock deserializeLambda(String variableName) {
+		return CodeBlock.of(
+			"$T.liftArray($L, $T.toList())",
+			JsonUtil.class,
+			items.deserializeLambda(variableName + "$inner"),
+			Collectors.class
+		);
+	}
+
+	@Override
 	public CodeBlock accessDeserialize(String jsonVariable) {
-		var innerVariable = jsonVariable + "$inner";
-		return CodeBlock.of("$T.stream($L.getAsJsonArray()).map($L -> $L).toList()",
+		return CodeBlock.of("$T.stream($L.getAsJsonArray()).map($L).toList()",
 			JsonUtil.class,
 			jsonVariable,
-			innerVariable,
-			items.accessDeserialize(innerVariable)
+			items.deserializeLambda(jsonVariable + "$inner")
+		);
+	}
+
+	@Override
+	public CodeBlock serializeLambda(String variableName) {
+		return CodeBlock.of(
+			"$T.liftUnArray($L)",
+			JsonUtil.class,
+			items.serializeLambda(variableName + "$inner")
 		);
 	}
 
 	@Override
 	public CodeBlock accessSerialize(String sourceVariable) {
-		var innerVariable = sourceVariable + "$inner";
-		return CodeBlock.of("$T.unstream($L.stream().map($L -> $L))",
+		return CodeBlock.of("$T.unstream($L.stream().map($L))",
 			JsonUtil.class,
 			sourceVariable,
-			innerVariable,
-			items.accessSerialize(innerVariable)
+			items.serializeLambda(sourceVariable + "$inner")
 		);
 	}
 }

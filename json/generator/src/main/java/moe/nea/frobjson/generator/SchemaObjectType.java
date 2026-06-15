@@ -57,16 +57,10 @@ public class SchemaObjectType implements SchemaType {
 		} else {
 			encode.addStatement("$T $L = new $T()", JsonObject.class, "$json", JsonObject.class);
 			for (var prop : properties) {
-				if (!prop.required()) {
-					encode.beginControlFlow("if (this.$L != null)", prop.fieldName());
-				} else {
-					encode.beginControlFlow("");
-				}
-
-				encode
-					.addStatement("$T $L = this.$L", prop.fieldType().withoutAnnotations(), "$field", prop.fieldName())
-					.addStatement("$L.add($S, $L)", "$json", prop.propName(), prop.type().accessSerialize("$field"))
-					.endControlFlow();
+				encode.addStatement("""
+					$T.acceptNullable(
+					$L,
+					it -> $L.add($S, it))""", JsonUtil.class, prop.serializerExpression("this"), "$json", prop.propName());
 			}
 			encode.addStatement("return $L", "$json");
 		}
@@ -121,13 +115,13 @@ public class SchemaObjectType implements SchemaType {
 		return MethodSpec.methodBuilder("fromJson")
 			.returns(typeName)
 			.addModifiers(Modifier.STATIC, Modifier.PUBLIC)
-			.addAnnotation(buildSuppressWarnings(Stream.of("Convert2MethodRef")))
+			.addAnnotation(buildSuppressWarnings(Stream.of("Convert2MethodRef", "RedundantTypeArguments")))
 			.addParameter(JsonElement.class, "$json")
 			.addStatement("$T $L = $L.getAsJsonObject()", JsonObject.class, "$json$object", "$json")
 			.addCode("$T $L = new $T(\n", typeName, "$constructed", typeName)
 			.addCode(
 				properties.stream()
-					.map(it -> CodeBlock.of("    $L", it.serializerExpression("$json$object")))
+					.map(it -> CodeBlock.of("    $L", it.deserializerExpression("$json$object")))
 					.collect(CodeBlock.joining(",\n")))
 			.addStatement(")")
 			.addStatement("$L.$L = $L", "$constructed", "$json", "$json")
@@ -201,5 +195,15 @@ public class SchemaObjectType implements SchemaType {
 	@Override
 	public CodeBlock accessSerialize(String sourceVariable) {
 		return CodeBlock.of("$L.asJson()", sourceVariable);
+	}
+
+	@Override
+	public CodeBlock serializeLambda(String variableName) {
+		return CodeBlock.of("$T::asJson", typeName);
+	}
+
+	@Override
+	public CodeBlock deserializeLambda(String variableName) {
+		return CodeBlock.of("$T::fromJson", typeName);
 	}
 }
