@@ -67,6 +67,7 @@ public class GenerationContext {
 		var allOf = obj.getAsJsonArray("allOf");
 		if (allOf != null) {
 			// Perhaps allOf could be merged as json objects instead?
+			// This needs to be smarter, in terms of naming things. if we merge ClientEventWithoutRoomId a bunch, then this is just really not sustainable
 			return getSchemaForProperty(propertyName, JsonUtil.stream(allOf).reduce(JsonUtil::mergeVariantOverriding).get(), parent);
 //			return new SchemaAllOfType(
 //				this,
@@ -122,7 +123,7 @@ public class GenerationContext {
 
 	public JsonElement cleanValue(JsonElement element) {
 		if (element instanceof JsonObject obj) {
-			var ignoredKeys = List.of("description", "example");
+			var ignoredKeys = List.of("description", "example", "deprecated");
 			var obj2 = new JsonObject();
 			obj.entrySet()
 				.stream()

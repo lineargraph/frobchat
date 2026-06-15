@@ -45,6 +45,7 @@ public class SchemaObjectType implements SchemaType {
 				prop.getKey(),
 				fieldNames.allocateName(prop.getKey()),
 				context.getSchemaForProperty(prop.getKey(), prop.getValue(), this),
+				JsonUtil.getStringOrNull(prop.getValue().getAsJsonObject().get("description")),
 				requiredProps.contains(prop.getKey())
 			)).toList();
 	}

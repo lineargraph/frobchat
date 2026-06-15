@@ -11,6 +11,7 @@ public record SchemaProperty(
 	String propName,
 	String fieldName,
 	SchemaType type,
+	@Nullable String description,
 	boolean required
 ) {
 	TypeName fieldType() {
