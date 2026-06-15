@@ -41,29 +41,17 @@ public record OpenApiOperation(
 		if (requestBody != null) {
 			bodyType = clsName.nestedClass("Body");
 
-			var bodyCls = TypeSpec.classBuilder("Body")
-				.addModifiers(Modifier.PUBLIC, Modifier.STATIC, Modifier.FINAL)
+			var bodyCls = TypeSpec.recordBuilder("Body")
+				.addModifiers(Modifier.PUBLIC)
+				.recordConstructor(MethodSpec.constructorBuilder()
+					.addParameter(requestBody.fieldType(), "body")
+					.build())
 				.addSuperinterface(ParameterizedTypeName
 					.get(ClassName.get(Operation.JsonBody.class), requestBody.schema().typeName()))
-				.addField(FieldSpec
-					.builder(requestBody.fieldType(), "body")
-					.addModifiers(Modifier.PRIVATE, Modifier.FINAL)
-					.build())
-				.addMethod(MethodSpec.constructorBuilder()
-					.addModifiers(Modifier.PUBLIC)
-					.addParameter(requestBody.fieldType(), "body")
-					.addStatement("this.body = body")
-					.build())
-				.addMethod(MethodSpec.methodBuilder("body")
-					.addModifiers(Modifier.PUBLIC)
-					.addAnnotation(Override.class)
-					.returns(requestBody.fieldType())
-					.addStatement("return this.body")
-					.build())
 				.addMethod(MethodSpec.methodBuilder("asJson")
 					.addModifiers(Modifier.PUBLIC)
 					.returns(TypeUtils.required(requestBody.required(), ClassName.get(JsonElement.class)))
-					.addStatement("return $L", requestBody.schema().accessSerialize("this.body"))
+					.addStatement("return $L", requestBody.schema().accessSerialize("this.body()"))
 					.build());
 			operationCls.addType(bodyCls.build());
 		}

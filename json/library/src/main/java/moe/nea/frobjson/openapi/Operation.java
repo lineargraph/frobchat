@@ -5,7 +5,6 @@ import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 
 @NullMarked
 public interface Operation<P extends Operation.Parameters, B extends Operation.Body, R> {
