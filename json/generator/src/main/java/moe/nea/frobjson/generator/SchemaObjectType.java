@@ -4,6 +4,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.palantir.javapoet.*;
 import moe.nea.frobjson.internal.JsonUtil;
+import moe.nea.frobjson.internal.SchemaObject;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
@@ -158,6 +159,7 @@ public class SchemaObjectType implements SchemaType {
 	@Override
 	public List<JavaFile> emitFiles() {
 		var cls = TypeSpec.classBuilder(typeName)
+			.addSuperinterface(SchemaObject.class)
 			.addModifiers(Modifier.PUBLIC, Modifier.FINAL)
 			.addAnnotation(NullMarked.class)
 			.addAnnotation(buildSuppressWarnings(Stream.of("unused", "RedundantSuppression")))

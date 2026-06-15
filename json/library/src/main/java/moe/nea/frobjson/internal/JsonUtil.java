@@ -3,6 +3,7 @@ package moe.nea.frobjson.internal;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import org.jetbrains.annotations.Contract;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
@@ -52,6 +53,23 @@ public class JsonUtil {
 	public static <T extends @Nullable Object> void acceptNullable(T obj, Consumer<? super @NonNull T> action) {
 		if (obj != null)
 			action.accept(obj);
+	}
+
+	@Contract(mutates = "param1")
+	public static <T extends JsonElement> T mergeVariant(T a, JsonElement b) {
+		if (a instanceof JsonObject object) {
+			for (var prop : b.getAsJsonObject().entrySet()) {
+				var left = object.get(prop.getKey());
+				var right = prop.getValue();
+				if (left == null)
+					object.add(prop.getKey(), right);
+				else
+					object.add(prop.getKey(), mergeVariant(left, right));
+			}
+			return a;
+		}
+		if (!a.equals(b)) throw new RuntimeException("Mismatched merging " + a + " <- " + b);
+		return a;
 	}
 
 	public interface ThrowingProvider<T> {

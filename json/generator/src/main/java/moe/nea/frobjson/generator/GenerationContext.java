@@ -2,6 +2,8 @@ package moe.nea.frobjson.generator;
 
 import com.google.gson.JsonElement;
 import com.palantir.javapoet.JavaFile;
+import moe.nea.frobjson.internal.JsonUtil;
+import moe.nea.frobjson.internal.StreamUtil;
 import org.jspecify.annotations.Nullable;
 
 import java.io.IOException;
@@ -50,19 +52,45 @@ public class GenerationContext {
 		return files;
 	}
 
-	// TODO: make this _lazy_
-	public SchemaType getSchemaForProperty(String propertyName, JsonElement value, @Nullable SchemaType parent) {
-		var type = value.getAsJsonObject().get("type").getAsString();
-		var schema = switch (type) {
-			case "object" -> new SchemaObjectType(this, value.getAsJsonObject(), propertyName, parent);
+	private SchemaType constructSchema(String propertyName, JsonElement value, @Nullable SchemaType parent) {
+		var obj = value.getAsJsonObject();
+		var allOf = obj.getAsJsonArray("allOf");
+		if (allOf != null) {
+			return new SchemaAllOfType(
+				this,
+				deriveName(parent, JsonUtil.getStringOrNull(obj.get("title")), propertyName),
+				JsonUtil.stream(allOf)
+					.map(StreamUtil.withIndex())
+					.map(it -> getSchemaForProperty(propertyName + it.index(), it.value(), parent))
+					.toList()
+			);
+		}
+		var type = obj.get("type").getAsString();
+		return switch (type) {
+			case "object" -> new SchemaObjectType(this, obj, propertyName, parent);
 			case "string" -> new SchemaStringType();
 			case "integer" -> new SchemaIntegerType();
-			case "array" ->
-				new SchemaArrayType(getSchemaForProperty(propertyName, value.getAsJsonObject().get("items"), parent));
+			case "array" -> new SchemaArrayType(getSchemaForProperty(propertyName, obj.get("items"), parent));
 			default -> throw new RuntimeException("Unknown type " + type);
 		};
-		allTypes.add(schema);
-		todos.add(schema);
-		return schema;
+	}
+
+	// TODO: make this _lazy_
+	public SchemaType getSchemaForProperty(String propertyName, JsonElement value, @Nullable SchemaType parent) {
+		try {
+			var schema = constructSchema(propertyName, value, parent);
+			allTypes.add(schema);
+			todos.add(schema);
+			return schema;
+		} catch (Throwable e) {
+			if (e instanceof TypeMakingException) throw e;
+			throw new TypeMakingException("While trying to schematize " + value, e);
+		}
+	}
+
+	static class TypeMakingException extends RuntimeException {
+		public TypeMakingException(String message, Throwable cause) {
+			super(message, cause);
+		}
 	}
 }

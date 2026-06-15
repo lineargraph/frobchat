@@ -6,5 +6,6 @@ plugins {
 
 dependencies {
 	api(libs.jspecify)
+	api(libs.jbAnnotations)
 	api(libs.gson)
 }
