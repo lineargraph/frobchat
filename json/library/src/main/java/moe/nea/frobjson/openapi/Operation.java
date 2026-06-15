@@ -31,7 +31,9 @@ public interface Operation<P extends Operation.Parameters, B extends Operation.B
 	EmptyBody EMPTY_BODY = new EmptyBody();
 
 	interface Parameters {
-		Map<String, String> queryParameters();
+		default Map<String, String> queryParameters() {
+			return Map.of();
+		}
 
 		default String pathParameter(String name) {
 			throw new RuntimeException("Unknown path parameter: " + name);
