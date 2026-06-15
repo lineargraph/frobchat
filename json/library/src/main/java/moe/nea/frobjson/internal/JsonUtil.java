@@ -6,6 +6,7 @@ import com.google.gson.JsonObject;
 import org.jspecify.annotations.Nullable;
 
 import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -44,6 +45,11 @@ public class JsonUtil {
 
 	public interface ThrowingProvider<T> {
 		T provide() throws Throwable;
+	}
+
+	public static <T, J extends JsonElement> @Nullable T decodePotentiallyAbsent(@Nullable J element, Function<? super J, ? extends T> decoder) {
+		if (element == null) return null;
+		return decoder.apply(element);
 	}
 
 	public static <T> T iex(ThrowingProvider<T> provider) {

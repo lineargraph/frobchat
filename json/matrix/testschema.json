@@ -1,56 +1,49 @@
 {
-	"additionalProperties": {
-		"description": "Application-dependent keys using Java package naming convention."
-	},
-	"description": "Used by clients to determine the homeserver, identity server, and other\noptional components they should be interacting with.",
-	"example": {
-		"m.homeserver": {
-			"base_url": "https://matrix.example.com"
-		},
-		"m.identity_server": {
-			"base_url": "https://identity.example.com"
-		},
-		"org.example.custom.property": {
-			"app_url": "https://custom.app.example.org"
-		}
-	},
 	"properties": {
-		"m.homeserver": {
-			"description": "Used by clients to discover homeserver information.",
-			"properties": {
-				"base_url": {
-					"description": "The base URL for the homeserver for client-server connections.",
-					"example": "https://matrix.example.com",
-					"format": "uri",
-					"type": "string"
-				}
+		"contacts": {
+			"description": "Ways to contact the server administrator.\n\nAt least one of `contacts` or `support_page` is required.\nIf only `contacts` is set, it must contain at least one\nitem.",
+			"items": {
+				"description": "A way to contact the server administrator.",
+				"example": {
+					"email_address": "admin@example.org",
+					"matrix_id": "@admin:example.org",
+					"role": "m.role.admin"
+				},
+				"properties": {
+					"email_address": {
+						"description": "An email address to reach the administrator.\n\nAt least one of `matrix_id` or `email_address` is\nrequired.",
+						"format": "email",
+						"type": "string"
+					},
+					"matrix_id": {
+						"description": "A [Matrix User ID](https://spec.matrix.org/v1.18/appendices/#user-identifiers)\nrepresenting the administrator.\n\nIt could be an account registered on a different\nhomeserver so the administrator can be contacted\nwhen the homeserver is down.\n\nAt least one of `matrix_id` or `email_address` is\nrequired.",
+						"format": "mx-user-id",
+						"pattern": "^@",
+						"type": "string"
+					},
+					"role": {
+						"description": "An informal description of what the contact methods\nare used for.\n\n`m.role.admin` is a catch-all role for any queries\nand `m.role.security` is intended for sensitive\nrequests.\n\nUnspecified roles are permitted through the use of\n[Namespaced Identifiers](https://spec.matrix.org/v1.18/appendices/#common-namespaced-identifier-grammar).",
+						"enum": [
+							"m.role.admin",
+							"m.role.security"
+						],
+						"type": "string"
+					}
+				},
+				"required": [
+					"role"
+				],
+				"title": "Contact",
+				"type": "object"
 			},
-			"required": [
-				"base_url"
-			],
-			"title": "Homeserver Information",
-			"type": "object"
+			"type": "array"
 		},
-		"m.identity_server": {
-			"description": "Used by clients to discover identity server information.",
-			"properties": {
-				"base_url": {
-					"description": "The base URL for the identity server for client-server connections.",
-					"example": "https://identity.example.com",
-					"format": "uri",
-					"type": "string"
-				}
-			},
-			"required": [
-				"base_url"
-			],
-			"title": "Identity Server Information",
-			"type": "object"
+		"support_page": {
+			"description": "The URL of a page to give users help specific to the\nhomeserver, like extra login/registration steps.\n\nAt least one of `contacts` or `support_page` is required.",
+			"example": "https://example.org/support.html",
+			"format": "uri",
+			"type": "string"
 		}
 	},
-	"required": [
-		"m.homeserver"
-	],
-	"title": "Discovery Information",
 	"type": "object"
 }

@@ -50,6 +50,7 @@ public class SchemaObjectType implements SchemaType {
 	MethodSpec buildGenerateJson() {
 		var encode = MethodSpec.methodBuilder("generateJson")
 			.returns(JsonElement.class)
+			.addAnnotation(buildSuppressWarnings(Stream.of("UnnecessaryLocalVariable", "Convert2MethodRef")))
 			.addModifiers(Modifier.PUBLIC);
 		if (properties.isEmpty()) {
 			encode.addStatement("return new $T()", JsonObject.class);
@@ -63,8 +64,7 @@ public class SchemaObjectType implements SchemaType {
 				}
 
 				encode
-					.addStatement("@$T($S) $T $L = this.$L", SuppressWarnings.class, "UnnecessaryLocalVariable", prop.fieldType()
-						.withoutAnnotations(), "$field", prop.fieldName())
+					.addStatement("$T $L = this.$L", prop.fieldType().withoutAnnotations(), "$field", prop.fieldName())
 					.addStatement("$L.add($S, $L)", "$json", prop.propName(), prop.type().accessSerialize("$field"))
 					.endControlFlow();
 			}
@@ -121,6 +121,7 @@ public class SchemaObjectType implements SchemaType {
 		var decode = MethodSpec.methodBuilder("fromJson")
 			.returns(typeName)
 			.addModifiers(Modifier.STATIC, Modifier.PUBLIC)
+			.addAnnotation(buildSuppressWarnings(Stream.of("Convert2MethodRef")))
 			.addParameter(JsonElement.class, "$json");
 		var jsonObjectName = "$json$object";
 		decode.addStatement("$T $L = $L.getAsJsonObject()", JsonObject.class, jsonObjectName, "$json");
@@ -130,11 +131,13 @@ public class SchemaObjectType implements SchemaType {
 				.addStatement("$T $L = $L.get($S)", JsonElement.class, "$jsonField", jsonObjectName, prop.propName());
 
 			if (!prop.required()) {
-				decode.beginControlFlow("if ($L == null)", "$jsonField")
-					.addStatement("$L = null", prop.fieldName())
-					.nextControlFlow("else")
-					.addStatement("$L = $L", prop.fieldName(), prop.type().accessDeserialize("$jsonField"))
-					.endControlFlow();
+				decode.addStatement("$L = $T.decodePotentiallyAbsent($L, $L -> $L)",
+					prop.fieldName(),
+					JsonUtil.class,
+					"$jsonField",
+					"$jsonField$present",
+					prop.type().accessDeserialize("$jsonField$present")
+				);
 			} else {
 				decode.addStatement("$L = $L", prop.fieldName(), prop.type().accessDeserialize("$jsonField"));
 			}
@@ -184,7 +187,7 @@ public class SchemaObjectType implements SchemaType {
 		var cls = TypeSpec.classBuilder(typeName)
 			.addModifiers(Modifier.PUBLIC, Modifier.FINAL)
 			.addAnnotation(NullMarked.class)
-			.addAnnotation(buildSuppressWarnings(Stream.of("unused")))
+			.addAnnotation(buildSuppressWarnings(Stream.of("unused", "RedundantSuppression")))
 			.addField(buildJsonField())
 			.addFields(properties.stream().map(this::buildField).toList())
 			.addMethods(properties.stream().map(this::buildGetter).toList())

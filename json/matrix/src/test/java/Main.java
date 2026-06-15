@@ -1,25 +1,17 @@
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
-import moe.nea.frobchat.model.DiscoveryInformation;
+import moe.nea.frobchat.model.Contact;
+
+import moe.nea.frobchat.model.WellKnownProperties;
+
+import java.util.List;
 
 void main() {
-	var discoveryInformation = DiscoveryInformation.fromJson(
-		new Gson().fromJson("""
-			{
-				"m.homeserver": {
-					"base_url": "https://matrix.example.com"
-				},
-				"m.identity_server": {
-					"base_url": "https://identity.example.com"
-				},
-				"org.example.custom.property": {
-					"app_url": "https://custom.app.example.org"
-				}
-			}
-			""", JsonObject.class)
+	var wellKnownProperties = new WellKnownProperties(
+		List.of(new Contact("nea@nea.moe", null, "admin")),
+		"https://matrix.nea.moe"
 	);
-	System.out.println(discoveryInformation);
-	System.out.println(discoveryInformation.mHomeserver());
-	System.out.println(discoveryInformation.asJson());
-	System.out.println(discoveryInformation.generateJson());
+	IO.println(wellKnownProperties);
+	IO.println(wellKnownProperties.asJson());
+	IO.println(WellKnownProperties.fromJson(wellKnownProperties.asJson()));
 }
