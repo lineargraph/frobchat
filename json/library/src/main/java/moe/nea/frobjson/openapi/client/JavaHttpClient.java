@@ -5,8 +5,6 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonSyntaxException;
 import moe.nea.frobjson.openapi.Operation;
 
-import java.io.IOException;
-import java.io.InputStreamReader;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.net.http.HttpClient;
@@ -16,7 +14,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
 import java.util.stream.Collectors;
 
 public class JavaHttpClient {

@@ -44,33 +44,22 @@ public record OpenApiOperation(
 
 			operationCls.addType(requestBody.buildRecordBody());
 		}
+
 		var parameterCls = buildParameterClass(parametersTyp);
 
-		for (var responseE : responses.entrySet()) {
-			var response = responseE.getValue();
-			var self = clsName.nestedClass("Status" + responseE.getKey());
-			operationCls.addType(TypeSpec.recordBuilder(self.simpleName())
+
+		// TODO: remove StatusUnknown
+		operationCls
+			.addTypes(responses.entrySet().stream().map(responseE -> buildResponse(responseE.getKey(), responseE.getValue(), clsName, responsesTyp)).toList())
+			.addType(TypeSpec.recordBuilder("StatusUnknown")
 				.recordConstructor(MethodSpec.constructorBuilder()
-					.addParameter(response.schema().typeName(), "body")
+					.addParameter(int.class, "statusCode")
 					.build())
 				.addSuperinterface(responsesTyp)
 				.addModifiers(Modifier.PUBLIC)
-				.addMethod(MethodSpec.methodBuilder("from")
-					.returns(self)
-					.addModifiers(Modifier.PUBLIC, Modifier.STATIC)
-					.addParameter(JsonElement.class, "json")
-					.addStatement("return new $T($L)", self, response.schema().accessDeserialize("json"))
-					.build())
-				.build());
-		}
-		operationCls.addType(TypeSpec.recordBuilder("StatusUnknown")
-			.recordConstructor(MethodSpec.constructorBuilder()
-				.addParameter(int.class, "statusCode")
 				.build())
-			.addSuperinterface(responsesTyp)
-			.addModifiers(Modifier.PUBLIC)
-			.build());
-		operationCls
+			.addType(buildResponseSuperclass(responsesTyp, clsName))
+			.addType(parameterCls)
 			.addMethod(MethodSpec.constructorBuilder()
 				.addModifiers(Modifier.PRIVATE).build())
 			.addField(FieldSpec.builder(clsName, "INSTANCE")
@@ -84,30 +73,32 @@ public record OpenApiOperation(
 				.addParameter(int.class, "statusCode")
 				.addParameter(JsonElement.class, "element")
 				.addStatement("return $T.fromStatus(statusCode, element)", responsesTyp)
-				.build());
-		{
-			CodeBlock.Builder builder = CodeBlock.builder();
-			var matcher = Pattern.compile("\\{([^}]+)\\}").matcher(path);
-			var lastAppendPosition = 0;
-			while (matcher.find()) {
-				if (!builder.isEmpty())
-					builder.add("\n + ");
-				builder.add("$S + $L.pathParameter($S)", path.substring(lastAppendPosition, matcher.start()), "parameters", matcher.group(1)); // TODO: map group -> fieldName
-				lastAppendPosition = matcher.end();
-			}
-			if (!builder.isEmpty())
-				builder.add("\n + ");
-			builder.add("$S", path.substring(lastAppendPosition));
-			operationCls
-				.addMethod(MethodSpec.methodBuilder("path")
-					.returns(String.class)
-					.addModifiers(Modifier.PUBLIC)
-					.addParameter(parametersTyp, "parameters")
-					.addAnnotation(Override.class)
-					.addStatement("return $L", builder.build())
-					.build());
-		}
-		operationCls.addType(TypeSpec
+				.build())
+			.addMethod(buildPathGenerator(parametersTyp))
+			.addMethod(MethodSpec
+				.methodBuilder("path")
+				.addModifiers(Modifier.PUBLIC)
+				.returns(String.class)
+				.addAnnotation(Override.class)
+				.addStatement("return $S", path)
+				.build())
+			.addMethod(MethodSpec
+				.methodBuilder("method")
+				.addModifiers(Modifier.PUBLIC)
+				.returns(String.class)
+				.addAnnotation(Override.class)
+				.addStatement("return $S", method)
+				.build())
+			.addSuperinterface(ParameterizedTypeName.get(
+				ClassName.get(Operation.class),
+				parametersTyp,
+				bodyType,
+				responsesTyp));
+		return JavaFile.builder(clsName.packageName(), operationCls.build()).build();
+	}
+
+	private TypeSpec buildResponseSuperclass(ClassName responsesTyp, ClassName clsName) {
+		return TypeSpec
 			.interfaceBuilder(responsesTyp.simpleName())
 			.addModifiers(Modifier.PUBLIC, Modifier.STATIC, Modifier.SEALED)
 			.addPermittedSubclasses(
@@ -131,30 +122,50 @@ public record OpenApiOperation(
 				.addStatement("default -> new $T(statusCode)", clsName.nestedClass("StatusUnknown"))
 				.endControlFlow("")
 				.build())
-			.build());
+			.build();
+	}
 
-		operationCls.addMethod(MethodSpec
-			.methodBuilder("path")
-			.addModifiers(Modifier.PUBLIC)
+	private MethodSpec buildPathGenerator(TypeName parameters) {
+		CodeBlock.Builder builder = CodeBlock.builder();
+		var matcher = Pattern.compile("\\{([^}]+)\\}").matcher(path);
+		var lastAppendPosition = 0;
+		while (matcher.find()) {
+			if (!builder.isEmpty())
+				builder.add("\n + ");
+			builder.add("$S + $L.pathParameter($S)", path.substring(lastAppendPosition, matcher.start()), "parameters", matcher.group(1)); // TODO: map group -> fieldName
+			lastAppendPosition = matcher.end();
+		}
+		if (!builder.isEmpty())
+			builder.add("\n + ");
+		builder.add("$S", path.substring(lastAppendPosition));
+		return MethodSpec.methodBuilder("path")
 			.returns(String.class)
-			.addAnnotation(Override.class)
-			.addStatement("return $S", path)
-			.build());
-		operationCls.addMethod(MethodSpec
-			.methodBuilder("method")
 			.addModifiers(Modifier.PUBLIC)
-			.returns(String.class)
+			.addParameter(parameters, "parameters")
 			.addAnnotation(Override.class)
-			.addStatement("return $S", method)
-			.build());
-		operationCls.addType(parameterCls);
-		operationCls.addSuperinterface(ParameterizedTypeName.get(
-			ClassName.get(Operation.class),
-			parametersTyp,
-			bodyType,
-			responsesTyp));
-		return JavaFile.builder(clsName.packageName(),
-			operationCls.build()).build();
+			.addStatement("return $L", builder.build())
+			.build();
+
+	}
+
+	private static TypeSpec buildResponse(
+		int statusCode, OpenApiResponse response, ClassName clsName,
+		ClassName responsesTyp) {
+		var self = clsName.nestedClass("Status" + statusCode);
+		return TypeSpec
+			.recordBuilder(self.simpleName())
+			.recordConstructor(MethodSpec.constructorBuilder()
+				.addParameter(response.schema().typeName(), "body")
+				.build())
+			.addSuperinterface(responsesTyp)
+			.addModifiers(Modifier.PUBLIC)
+			.addMethod(MethodSpec.methodBuilder("from")
+				.returns(self)
+				.addModifiers(Modifier.PUBLIC, Modifier.STATIC)
+				.addParameter(JsonElement.class, "json")
+				.addStatement("return new $T($L)", self, response.schema().accessDeserialize("json"))
+				.build())
+			.build();
 	}
 
 	private TypeSpec buildParameterClass(ClassName parametersTyp) {
@@ -203,7 +214,8 @@ public record OpenApiOperation(
 				.build());
 		}
 
-		parameterCls.addMethod(MethodSpec.constructorBuilder()
+		parameterCls
+			.addMethod(MethodSpec.constructorBuilder()
 				.addModifiers(Modifier.PUBLIC)
 				.addParameters(parameters.stream()
 					.map(it -> ParameterSpec
@@ -214,37 +226,34 @@ public record OpenApiOperation(
 					parameters.stream()
 						.map(it -> switch (it.in()) {
 							case PATH -> CodeBlock.of("this.$L = $L;\n", it.fieldName(), it.fieldName());
-							case QUERY ->
-								CodeBlock.of("this.$L.put($S, $L);\n", "$queryParameters", it.name(), it.schema().unlazy() instanceof SchemaStringType ? it.fieldName() : CodeBlock.of("($L).getAsString()", it.schema().accessSerialize(it.fieldName())));
-							case HEADER -> CodeBlock.of("this.$L.put($S, $L);\n", "$headers", it.name(), it.fieldName());
+							case QUERY -> CodeBlock.of("this.$L.put($S, $L);\n", "$queryParameters", it.name(),
+								it.schema().unlazy() instanceof SchemaStringType
+									? it.fieldName()
+									: CodeBlock.of("($L).getAsString()", it.schema().accessSerialize(it.fieldName())));
+							case HEADER ->
+								CodeBlock.of("this.$L.put($S, $L);\n", "$headers", it.name(), it.fieldName());
 						})
-						.collect(CodeBlock.joining(""))
-				)
+						.collect(CodeBlock.joining("")))
 				.build())
-			.addFields(parameters
+			.addFields(groupedPar.getOrDefault(OpenApiParameter.In.PATH, List.of())
 				.stream()
-				.filter(it -> it.in() == OpenApiParameter.In.PATH)
 				.map(it -> FieldSpec
-					.builder(it.type(), it.name())
+					.builder(it.type(), it.fieldName())
 					.addModifiers(Modifier.PRIVATE, Modifier.FINAL)
 					.build())
 				.toList())
 
 			.addMethods(parameters
 				.stream()
-				.filter(it -> it.in() != OpenApiParameter.In.HEADER)
 				.map(it -> {
 					var method = MethodSpec
-						.methodBuilder(it.name())
+						.methodBuilder(it.fieldName())
 						.addModifiers(Modifier.PUBLIC)
-						.returns(it.in() == OpenApiParameter.In.QUERY ? TypeUtils.required(it.required(), ClassName.get(String.class)) : it.type());
+						.returns(it.in() == OpenApiParameter.In.PATH ? it.type() : TypeUtils.required(it.required(), ClassName.get(String.class)));
 					switch (it.in()) {
-						case QUERY -> {
-							method.addStatement("return this.$L.get($S)", "$queryParameters", it.name());
-						}
-						case PATH -> {
-							method.addStatement("return this.$L", it.name());
-						}
+						case HEADER -> method.addStatement("return this.$L.get($S)", "$headers", it.name());
+						case QUERY -> method.addStatement("return this.$L.get($S)", "$queryParameters", it.name());
+						case PATH -> method.addStatement("return this.$L", it.name());
 					}
 					return method.build();
 				})
