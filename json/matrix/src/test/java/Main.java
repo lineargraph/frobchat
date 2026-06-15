@@ -1,13 +1,15 @@
+import moe.nea.frobchat.matrixapi.MatrixAuthentication;
+import moe.nea.frobchat.matrixapi.MatrixClient;
 import moe.nea.frobchat.matrixapi.operations.GetWellknown;
 import moe.nea.frobjson.openapi.Operation;
-import moe.nea.frobjson.openapi.client.JavaHttpClient;
 
 import java.net.http.HttpClient;
 
 void main() {
-	var client = new JavaHttpClient(
+	var client = new MatrixClient(
 		"https://nea.moe",
-		HttpClient.newBuilder().build()
+		HttpClient.newBuilder().build(),
+		MatrixAuthentication.anon()
 	);
 	var result = client.executeOperation(GetWellknown.INSTANCE, new GetWellknown.Parameters(), Operation.EMPTY_BODY)
 		.join();

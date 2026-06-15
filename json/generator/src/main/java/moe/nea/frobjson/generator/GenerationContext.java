@@ -88,7 +88,7 @@ public class GenerationContext {
 				.collect(Collectors.toCollection(LinkedHashSet::new));
 			if (types.size() == 1)
 				return types.getFirst();
-			System.out.println("Could not merge type " + types);
+//			System.out.println("Could not merge type " + types);
 			return new SchemaOneOfType(
 				this,
 				typeNames.allocateName(guessName(propertyName, parent, obj)),

@@ -32,8 +32,7 @@ public class JavaHttpClient {
 		P parameters,
 		B body
 	) {
-		return client.sendAsync(buildRequest(operation, parameters, body),
-			bodyHandler(operation));
+		return client.sendAsync(buildRequest(operation, parameters, body).build(), bodyHandler(operation));
 	}
 
 	public <R> HttpResponse.BodyHandler<R> bodyHandler(Operation<?, ?, R> operation) {
@@ -55,15 +54,14 @@ public class JavaHttpClient {
 	}
 
 
-	public <P extends Operation.Parameters, B extends Operation.Body, R> HttpRequest buildRequest(
+	public <P extends Operation.Parameters, B extends Operation.Body, R> HttpRequest.Builder buildRequest(
 		Operation<P, B, R> operation,
 		P parameters,
 		B body
 	) {
 		return HttpRequest.newBuilder()
 			.method(operation.method().toUpperCase(Locale.ROOT), publisherFor(body))
-			.uri(URI.create(baseUrl + operation.path(parameters) + buildQuery(parameters.queryParameters())))
-			.build();
+			.uri(URI.create(baseUrl + operation.path(parameters) + buildQuery(parameters.queryParameters())));
 	}
 
 	private String buildQuery(Map<String, String> query) {
