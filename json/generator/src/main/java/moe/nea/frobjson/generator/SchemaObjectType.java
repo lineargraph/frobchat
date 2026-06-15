@@ -118,42 +118,21 @@ public class SchemaObjectType implements SchemaType {
 	}
 
 	MethodSpec buildDecode() {
-		var decode = MethodSpec.methodBuilder("fromJson")
+		return MethodSpec.methodBuilder("fromJson")
 			.returns(typeName)
 			.addModifiers(Modifier.STATIC, Modifier.PUBLIC)
 			.addAnnotation(buildSuppressWarnings(Stream.of("Convert2MethodRef")))
-			.addParameter(JsonElement.class, "$json");
-		var jsonObjectName = "$json$object";
-		decode.addStatement("$T $L = $L.getAsJsonObject()", JsonObject.class, jsonObjectName, "$json");
-		for (var prop : properties) {
-			decode.addStatement("$T $L", prop.fieldType().withoutAnnotations(), prop.fieldName())
-				.beginControlFlow("")
-				.addStatement("$T $L = $L.get($S)", JsonElement.class, "$jsonField", jsonObjectName, prop.propName());
-
-			if (!prop.required()) {
-				decode.addStatement("$L = $T.decodePotentiallyAbsent($L, $L -> $L)",
-					prop.fieldName(),
-					JsonUtil.class,
-					"$jsonField",
-					"$jsonField$present",
-					prop.type().accessDeserialize("$jsonField$present")
-				);
-			} else {
-				decode.addStatement("$L = $L", prop.fieldName(), prop.type().accessDeserialize("$jsonField"));
-			}
-			decode.endControlFlow();
-		}
-		decode
+			.addParameter(JsonElement.class, "$json")
+			.addStatement("$T $L = $L.getAsJsonObject()", JsonObject.class, "$json$object", "$json")
 			.addCode("$T $L = new $T(\n", typeName, "$constructed", typeName)
 			.addCode(
 				properties.stream()
-					.map(it -> CodeBlock.of("    $L", it.fieldName()))
+					.map(it -> CodeBlock.of("    $L", it.serializerExpression("$json$object")))
 					.collect(CodeBlock.joining(",\n")))
 			.addStatement(")")
 			.addStatement("$L.$L = $L", "$constructed", "$json", "$json")
-			.addStatement("return $L", "$constructed");
-
-		return decode.build();
+			.addStatement("return $L", "$constructed")
+			.build();
 	}
 
 	MethodSpec buildAsJson() {

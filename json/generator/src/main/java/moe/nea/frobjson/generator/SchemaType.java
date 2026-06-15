@@ -17,6 +17,14 @@ public interface SchemaType {
 
 	List<? extends JavaFile> emitFiles();
 
+	default CodeBlock deserializeLambda(String variableName) {
+		return CodeBlock.of("$L -> $L", variableName, accessDeserialize(variableName));
+	}
+
+	default CodeBlock serializeLambda(String variableName) {
+		return CodeBlock.of("$L -> $L", variableName, accessSerialize(variableName));
+	}
+
 	/// _must_ emit code along the lines of `deserialize({jsonVariable});`
 	CodeBlock accessDeserialize(String jsonVariable);
 

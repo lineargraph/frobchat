@@ -47,7 +47,15 @@ public class JsonUtil {
 		T provide() throws Throwable;
 	}
 
-	public static <T, J extends JsonElement> @Nullable T decodePotentiallyAbsent(@Nullable J element, Function<? super J, ? extends T> decoder) {
+	public static <T, J> T bind(J element, Function<? super J, ? extends T> decoder) {
+		return decoder.apply(element);
+	}
+
+	public static <T, R> Function<@Nullable T, @Nullable R> liftNullable(Function<? super T, ? extends R> lambda) {
+		return value -> value != null ? lambda.apply(value) : null;
+	}
+
+	public static <T, J> @Nullable T bindNullable(@Nullable J element, Function<? super J, ? extends T> decoder) {
 		if (element == null) return null;
 		return decoder.apply(element);
 	}
