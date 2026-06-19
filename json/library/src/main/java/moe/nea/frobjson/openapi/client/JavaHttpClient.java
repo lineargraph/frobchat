@@ -16,7 +16,7 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
-public class JavaHttpClient {
+public class JavaHttpClient implements ApiExecutor {
 	private final String baseUrl;
 	private final HttpClient client;
 
@@ -27,12 +27,12 @@ public class JavaHttpClient {
 		this.client = client;
 	}
 
-	public <P extends Operation.Parameters, B extends Operation.Body, R> CompletableFuture<HttpResponse<R>> executeOperation(
+	public <P extends Operation.Parameters, B extends Operation.Body, R> CompletableFuture<R> executeOperation(
 		Operation<P, B, R> operation,
 		P parameters,
 		B body
 	) {
-		return client.sendAsync(buildRequest(operation, parameters, body).build(), bodyHandler(operation));
+		return client.sendAsync(buildRequest(operation, parameters, body).build(), bodyHandler(operation)).thenApply(HttpResponse::body);
 	}
 
 	public <R> HttpResponse.BodyHandler<R> bodyHandler(Operation<?, ?, R> operation) {

@@ -1,5 +1,6 @@
 package moe.nea.frobchat.matrixapi;
 
+import moe.nea.frobchat.matrixapi.operations.Client;
 import moe.nea.frobjson.openapi.Operation;
 import moe.nea.frobjson.openapi.client.JavaHttpClient;
 
@@ -9,8 +10,12 @@ import java.net.http.HttpRequest;
 public class MatrixClient extends JavaHttpClient {
 	private final MatrixAuthentication authentication;
 
-	public MatrixClient(String baseUrl, HttpClient client, MatrixAuthentication authentication) {
-		super(baseUrl, client);
+	public static Client client(HttpClient client, MatrixAuthentication authentication) {
+		return new Client(new MatrixClient(client, authentication));
+	}
+
+	public MatrixClient(HttpClient client, MatrixAuthentication authentication) {
+		super(authentication.baseUrl(), client);
 		this.authentication = authentication;
 	}
 

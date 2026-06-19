@@ -1,12 +1,14 @@
 package moe.nea.frobjson.generator;
 
 import com.palantir.javapoet.AnnotationSpec;
+import com.palantir.javapoet.CodeBlock;
 import com.palantir.javapoet.ParameterizedTypeName;
 import com.palantir.javapoet.TypeName;
 import org.jspecify.annotations.Nullable;
 
 import java.util.Map;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
 public class TypeUtils {
 	public static TypeName MAP_STR_STR = ParameterizedTypeName.get(Map.class, String.class, String.class);
@@ -20,7 +22,13 @@ public class TypeUtils {
 		}
 		return name;
 	}
-
+	public static AnnotationSpec buildSuppressWarnings(Stream<? extends String> warnings) {
+		return AnnotationSpec.builder(SuppressWarnings.class)
+			.addMember("value", warnings
+				.map(it -> CodeBlock.of("$S", it))
+				.collect(CodeBlock.joining(", ", "{", "}")))
+			.build();
+	}
 	public static Pattern linkPattern = Pattern.compile("\\[([^\\]]+)\\]\\(([^\\)]+)\\)");
 	public static Pattern codePattern = Pattern.compile("`([^`]+)`");
 

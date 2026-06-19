@@ -14,6 +14,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static moe.nea.frobjson.generator.TypeUtils.buildSuppressWarnings;
+
 public class SchemaObjectType implements SchemaType {
 	GenerationContext context;
 	JsonObject definition;
@@ -159,13 +161,7 @@ public class SchemaObjectType implements SchemaType {
 			.build();
 	}
 
-	AnnotationSpec buildSuppressWarnings(Stream<? extends String> warnings) {
-		return AnnotationSpec.builder(SuppressWarnings.class)
-			.addMember("value", warnings
-				.map(it -> CodeBlock.of("$S", it))
-				.collect(CodeBlock.joining(", ", "{", "}")))
-			.build();
-	}
+
 
 	@Override
 	public List<JavaFile> emitFiles() {

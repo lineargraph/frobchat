@@ -2,14 +2,22 @@ package moe.nea.frobjson.generator.openapi;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.palantir.javapoet.JavaFile;
+import com.palantir.javapoet.*;
 import moe.nea.frobjson.generator.GenerationContext;
 import moe.nea.frobjson.generator.NameCollection;
+import moe.nea.frobjson.generator.TypeUtils;
 import moe.nea.frobjson.internal.JsonUtil;
+import moe.nea.frobjson.internal.StreamUtil;
+import moe.nea.frobjson.openapi.Operation;
+import moe.nea.frobjson.openapi.client.ApiClient;
+import moe.nea.frobjson.openapi.client.ApiExecutor;
 
+import javax.lang.model.element.Modifier;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -19,7 +27,8 @@ public class OpenApiSupport {
 	public static Stream<JavaFile> generateAllSchemasFromOpenApi(
 		GenerationContext ctx, JsonElement openApiDoc
 	) {
-		return JsonUtil.streamEntriesOrEmpty(openApiDoc.getAsJsonObject().get("paths"))
+		var clientName = ClassName.get(ctx.operationPackageName, ctx.operationTypeNames.allocateName("Client"));
+		var operations = JsonUtil.streamEntriesOrEmpty(openApiDoc.getAsJsonObject().get("paths"))
 			.flatMap(path -> JsonUtil.streamEntriesOrEmpty(path.getValue())
 				.map(operation -> {
 					var fieldNames = new NameCollection(false);
@@ -72,6 +81,7 @@ public class OpenApiSupport {
 							);
 					}
 					return new OpenApiOperation(
+						ClassName.get(ctx.operationPackageName, ctx.operationTypeNames.allocateName(operationName)),
 						operation.getKey(),
 						path.getKey(),
 						operationId,
@@ -81,7 +91,58 @@ public class OpenApiSupport {
 						parameters,
 						responses
 					);
-				}))
-			.map(it -> it.emitJavaFile(ctx));
+				})).toList();
+		return Stream.concat(
+			Stream.of(createClient(clientName, operations)),
+			operations.stream().map(it -> it.emitJavaFile(ctx)));
+	}
+
+	private static JavaFile createClient(ClassName clientName, List<OpenApiOperation> operations) {
+		var typ = TypeSpec.classBuilder(clientName)
+			.addModifiers(Modifier.PUBLIC)
+			.superclass(ApiClient.class)
+			.addAnnotation(TypeUtils.buildSuppressWarnings(Stream.of("unused")))
+			.addMethod(MethodSpec.constructorBuilder()
+				.addModifiers(Modifier.PUBLIC)
+				.addParameter(ApiExecutor.class, "executor")
+				.addStatement("super(executor)")
+				.build())
+			.addMethods(StreamUtil.iterable(operations.stream()
+				.map(operation -> MethodSpec.methodBuilder(operation.operationId())
+					.addModifiers(Modifier.PUBLIC)
+					.returns(ParameterizedTypeName.get(ClassName.get(CompletableFuture.class), operation.responsesTyp()))
+					.addParameters(StreamUtil.iterable(operation.parameters()
+						.stream()
+						.map(par -> ParameterSpec.builder(par.type(), par.fieldName()).build())))
+					.addParameter(operation.bodyType(), "body")
+					.addStatement(CodeBlock.of("return this.executor().executeOperation($T.INSTANCE,\n$L,\n$L)",
+						operation.clsName(),
+						CodeBlock.of("new $T.Parameters($L)",
+							operation.clsName(),
+							operation.parameters()
+								.stream()
+								.map(it -> CodeBlock.of("$L", it.fieldName()))
+								.collect(CodeBlock.joining(",\n"))),
+						"body"
+					))
+					.build())))
+			.addMethods(StreamUtil.iterable(operations.stream()
+				.filter(it -> it.requestBody() == null)
+				.map(operation -> MethodSpec.methodBuilder(operation.operationId())
+					.addModifiers(Modifier.PUBLIC)
+					.returns(ParameterizedTypeName.get(ClassName.get(CompletableFuture.class), operation.responsesTyp()))
+					.addParameters(StreamUtil.iterable(operation.parameters()
+						.stream()
+						.map(par -> ParameterSpec.builder(par.type(), par.fieldName()).build())))
+					.addStatement(CodeBlock.of("return this.$L($L)",
+						operation.operationId(),
+						Stream.concat(operation.parameters()
+							.stream()
+							.map(it -> CodeBlock.of("$L", it.fieldName())),
+							Stream.of(CodeBlock.of("$T.EMPTY_BODY", Operation.class))
+						).collect(CodeBlock.joining(",\n"))))
+					.build())));
+
+		return JavaFile.builder(clientName.packageName(), typ.build()).build();
 	}
 }

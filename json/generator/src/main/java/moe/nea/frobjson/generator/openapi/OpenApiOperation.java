@@ -6,7 +6,6 @@ import moe.nea.frobjson.generator.GenerationContext;
 import moe.nea.frobjson.generator.SchemaStringType;
 import moe.nea.frobjson.generator.TypeUtils;
 import moe.nea.frobjson.openapi.Operation;
-import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
@@ -18,19 +17,28 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public record OpenApiOperation(
+	ClassName clsName,
 	String method,
 	String path,
-	String operationId,
-	String description,
-	String summary,
+	@Nullable String operationId,
+	@Nullable String description,
+	@Nullable String summary,
 	@Nullable OpenApiRequestBody requestBody,
 	List<OpenApiParameter> parameters,
 	Map<Integer, OpenApiResponse> responses
 ) {
 
+	public TypeName bodyType() {
+		if (requestBody == null)
+			return ClassName.get(Operation.EmptyBody.class);
+		return clsName.nestedClass("Body");
+	}
+
+	public ClassName responsesTyp() {
+		return clsName.nestedClass("Response");
+	}
+
 	public JavaFile emitJavaFile(GenerationContext ctx) {
-		String packageName = ctx.operationPackageName;
-		var clsName = ClassName.get(packageName, ctx.operationTypeNames.allocateName(operationId));
 		var operationCls = TypeSpec.classBuilder(clsName)
 			.addAnnotation(NullMarked.class)
 			.addModifiers(Modifier.PUBLIC, Modifier.FINAL);
@@ -40,13 +48,11 @@ public record OpenApiOperation(
 		if (description != null)
 			operationCls.addJavadoc("$L", TypeUtils.formatJavadoc(description));
 
-		var responsesTyp = clsName.nestedClass("Response");
+		var responsesTyp = responsesTyp();
 		var parametersTyp = clsName.nestedClass("Parameters");
 
-		TypeName bodyType = ClassName.get(Operation.EmptyBody.class);
+		TypeName bodyType = bodyType();
 		if (requestBody != null) {
-			bodyType = clsName.nestedClass("Body");
-
 			operationCls.addType(requestBody.buildRecordBody());
 		}
 
@@ -167,7 +173,7 @@ public record OpenApiOperation(
 	private static TypeSpec buildResponse(
 		int statusCode,
 		OpenApiResponse response, ClassName clsName,
-		ClassName superTyp) {
+		@Nullable ClassName superTyp) {
 		var builder = TypeSpec
 			.recordBuilder(clsName.simpleName())
 			.recordConstructor(MethodSpec.constructorBuilder()
