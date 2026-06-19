@@ -1,5 +1,5 @@
 [versions]
-agp = "8.10.0"
+agp = "9.2.0"
 android-compileSdk = "35"
 android-minSdk = "24"
 android-targetSdk = "35"
@@ -13,12 +13,11 @@ androidx-testExt = "1.2.1"
 autoServiceAnnotations = "1.1.1"
 autoServiceKsp = "1.2.0"
 coilCompose = "3.2.0"
-composeHotReload = "1.0.0-alpha10"
-composeMultiplatform = "1.8.1"
+composeHotReload = "1.1.1"
+composeMultiplatform = "1.11.1"
 directories = "26"
 junit = "4.13.2"
-jellyfin = "1.6.8"
-kotlin = "2.3.21"
+kotlin = "2.4.0"
 kotlinLogging = "7.0.7"
 kotlinx-coroutines = "1.10.2"
 androidNavigation = "2.9.0-beta01"
@@ -63,7 +62,6 @@ androidx-lifecycle-runtimeCompose = { module = "org.jetbrains.androidx.lifecycle
 androidx-sqlite-bundled = { module = "androidx.sqlite:sqlite-bundled", version.ref = "androidx-sqlite" }
 kotlinx-coroutinesSwing = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-swing", version.ref = "kotlinx-coroutines" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "serialization-json" }
-jellyfin-core = { module = "org.jellyfin.sdk:jellyfin-core", version.ref = "jellyfin" }
 slf4j-simple = { module = "org.slf4j:slf4j-simple", version.ref = "slf4jSimple" }
 vlcj = { module = "uk.co.caprica:vlcj", version.ref = "vlcj" }
 voyager-navigator = { module = "cafe.adriel.voyager:voyager-navigator", version.ref = "voyager" }
@@ -87,6 +85,7 @@ ktor-client-jetty = { module = "io.ktor:ktor-client-jetty", version.ref = "ktor"
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }
 androidLibrary = { id = "com.android.library", version.ref = "agp" }
+androidKotlin = { id = "com.android.kotlin.multiplatform.library", version.ref = "agp" }
 composeHotReload = { id = "org.jetbrains.compose.hot-reload", version.ref = "composeHotReload" }
 composeMultiplatform = { id = "org.jetbrains.compose", version.ref = "composeMultiplatform" }
 composeCompiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }

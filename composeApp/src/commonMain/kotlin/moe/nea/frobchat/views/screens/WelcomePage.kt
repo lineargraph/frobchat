@@ -1,9 +1,7 @@
 package moe.nea.frobchat.views.screens
 
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowCircleRight
 import androidx.compose.material.icons.filled.HourglassBottom
@@ -14,7 +12,6 @@ import androidx.compose.material.icons.outlined.Password
 import androidx.compose.material.icons.outlined.Public
 import androidx.compose.material.icons.outlined.PublicOff
 import androidx.compose.material.icons.outlined.ReplayCircleFilled
-import androidx.compose.material.icons.outlined.VerifiedUser
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -31,39 +28,24 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import de.connect2x.trixnity.clientserverapi.client.MatrixClientAuthProviderData
-import de.connect2x.trixnity.clientserverapi.client.classic
-import de.connect2x.trixnity.clientserverapi.client.classicLoginWithPassword
-import de.connect2x.trixnity.clientserverapi.client.classicLoginWithToken
-import de.connect2x.trixnity.clientserverapi.client.unauthenticated
-import de.connect2x.trixnity.clientserverapi.model.authentication.IdentifierType
-import de.connect2x.trixnity.clientserverapi.model.authentication.LoginType
+import com.google.gson.JsonObject
 import io.github.oshai.kotlinlogging.KotlinLogging
-import io.ktor.http.Url
 import moe.nea.frobchat.build.BuildConfig
 import moe.nea.frobchat.config.findPreference
 import moe.nea.frobchat.layouts.CenterColumn
 import moe.nea.frobchat.matrixapi.MatrixAuthentication
 import moe.nea.frobchat.matrixapi.models.Login2
-import moe.nea.frobchat.matrixapi.operations.GetLoginFlows
-import moe.nea.frobchat.matrixapi.operations.GetWellknown
+import moe.nea.frobchat.matrixapi.models.UserIdentifier
 import moe.nea.frobchat.matrixapi.operations.Login
 import moe.nea.frobchat.util.FrobRoute
 import moe.nea.frobchat.util.findGlobalNavController
 import moe.nea.frobchat.util.getHostname
+import moe.nea.frobchat.util.matrix.awaitResult
 import moe.nea.frobchat.util.matrix.createMatrixThinClient
-import moe.nea.frobchat.util.matrix.execute
-import moe.nea.frobchat.views.components.Throbber
-import moe.nea.frobjson.openapi.Operation
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.future.asCompletableFuture
-import kotlinx.coroutines.future.await
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
-import kotlin.coroutines.CoroutineContext
-import kotlin.math.acos
 import kotlin.time.Duration.Companion.seconds
 
 private val logger = KotlinLogging.logger { }
@@ -91,10 +73,10 @@ object WelcomePage : FrobRoute {
 					"https://${server.text}/" // TODO: parse potential existing https url
 				)
 			)
-			val wellKnown = client.execute(GetWellknown.INSTANCE, GetWellknown.Parameters())
-			val homeServerBaseUrl = wellKnown.getOrNull()?.body?.mHomeserver()?.baseUrl()
+			val wellKnown = client.getWellknown().awaitResult()
+			val homeServerBaseUrl = wellKnown.getOrNull()
 			if (homeServerBaseUrl != null) {
-				setHomeServerState(HomeServerState.SUCCESS(homeServerBaseUrl))
+				setHomeServerState(HomeServerState.SUCCESS(homeServerBaseUrl.mHomeserver().baseUrl()))
 			} else {
 				logger.error(wellKnown.exceptionOrNull()) { "Failed to connect to homeserver at ${server.text}" }
 				setHomeServerState(HomeServerState.FAILURE)
@@ -175,23 +157,31 @@ data class LoginPage(val homeserver: String) : FrobRoute {
 					setLoginState(LoginState.NEUTRAL)
 					coroutineScope.launch {
 						logger.info { "Trying to log in." }
-						client.execute(Login.INSTANCE, Login.Parameters(), Login.Body(Login2(
-							null, null, null, null, null, null, null, null, null, null
-						)))
-						client.authentication.login(
-							identifier = IdentifierType.User(username.text),
-							password = password.text,
-							deviceId = deviceId,
-							initialDeviceDisplayName = "FrobChat ${getHostname()}",
-						).fold({ login ->
-							logger.info {
-								MatrixClientAuthProviderData.classic(
-									baseUrl = Url(homeserver),
-									accessToken = login.accessToken,
-									accessTokenExpiresInMs = login.accessTokenExpiresInMs,
-									refreshToken = login.refreshToken
+						client.login(
+							Login.Body(
+								Login2(
+									null,
+									deviceId,
+									run {
+										UserIdentifier("m.id.user").asJson()
+											.let {
+												// TODO: Yeah i need ergonomics for this lol
+												it as JsonObject
+												it.addProperty("user", username.text)
+												UserIdentifier.fromJson(it)
+											}
+									},
+									"FrobChat ${getHostname()}",
+									null,
+									password.text,
+									null,
+									null,
+									"m.login.password",
+									null
 								)
-							}
+							)
+						).awaitResult().fold({ login ->
+							logger.info { "Successful login: $login!" }
 						}, { exc ->
 							logger.info(exc) { "Failed to login" }
 							setLoginState(LoginState.FAILED)

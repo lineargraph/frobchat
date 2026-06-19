@@ -1,15 +1,10 @@
 package moe.nea.frobchat.util.matrix
 
+import java.util.concurrent.CompletableFuture
 import moe.nea.frobchat.matrixapi.MatrixAuthentication
-import moe.nea.frobchat.matrixapi.MatrixClient
-import moe.nea.frobjson.openapi.Operation
+import moe.nea.frobchat.matrixapi.operations.Client
 import kotlinx.coroutines.future.await
 
-expect fun createMatrixThinClient(authProviderData: MatrixAuthentication): MatrixClient
+expect fun createMatrixThinClient(authProviderData: MatrixAuthentication): Client
 
-suspend fun <P : Operation.Parameters, R : Any> MatrixClient.execute(op: Operation<P, Operation.EmptyBody, R>, p: P): Result<R> {
-	return executeOperation(op, p, Operation.EMPTY_BODY).runCatching {
-		await().body()
-	}
-}
-
+suspend fun <T> CompletableFuture<T>.awaitResult() = runCatching { await() }

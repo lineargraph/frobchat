@@ -10,7 +10,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 public class GenerateOpenApiSchemas {
-	static void main(
+	public static void main(
 		String[] args
 	) throws IOException {
 		var sourceFile = Path.of(args[0]);

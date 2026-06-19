@@ -1,28 +1,20 @@
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 import org.jetbrains.compose.jetbrainsCompose
-import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
 	`java-base`
 	alias(libs.plugins.kotlinMultiplatform)
 	alias(libs.plugins.kotlinSerialization)
-	alias(libs.plugins.androidApplication)
+//	alias(libs.plugins.androidApplication)
 	alias(libs.plugins.composeMultiplatform)
 	alias(libs.plugins.composeCompiler)
-	alias(libs.plugins.composeHotReload)
+//	alias(libs.plugins.composeHotReload)
 	id("com.github.gmazzo.buildconfig") version "5.6.5"
 	id("com.google.devtools.ksp") version "2.3.9"
 }
 
 kotlin {
 	jvmToolchain(21)
-	androidTarget {
-		@OptIn(ExperimentalKotlinGradlePluginApi::class)
-		compilerOptions {
-			jvmTarget.set(JvmTarget.JVM_21)
-		}
-	}
 
 	compilerOptions {
 		if (project.findProperty("frobchat.enableComposeCompilerReports") == "true") { // Collect metrics
@@ -40,7 +32,7 @@ kotlin {
 	jvm("desktop")
 
 	sourceSets {
-		val desktopMain by getting
+		val desktopMain = getByName("desktopMain")
 
 		commonMain.dependencies {
 
@@ -75,7 +67,8 @@ kotlin {
 
 //			implementation(libs.trixinity.client)
 			implementation(libs.ktor.client.core)
-			implementation(projects.json.matrix)
+//			implementation(projects.json.matrix)
+			implementation(project(":json:matrix"))
 
 			// Logging
 			implementation(libs.kotlinLogging)
@@ -98,15 +91,10 @@ kotlin {
 
 			implementation(libs.auto.service.annotations)
 		}
-		androidMain.dependencies {
-			implementation(compose.preview)
-			implementation(libs.androidx.activity.compose)
-			implementation(libs.androidx.core.ktx)
-		}
 	}
 }
 
-val extraNatives by configurations.creating {
+val extraNatives = configurations.create("extraNatives") {
 	isCanBeResolved = true
 	isCanBeDeclared = true
 	isCanBeConsumed = false // Should this be false?
@@ -152,12 +140,12 @@ compose.desktop {
 dependencies {
 	"kspDesktop"(libs.auto.service.ksp)
 
-	debugImplementation(compose.uiTooling)
-	// TODO: do multiple distros for each os / arch combo
-	extraNatives(compose.desktop.linux_x64)
-	extraNatives(compose.desktop.macos_x64)
-	extraNatives(compose.desktop.macos_arm64)
-	extraNatives(compose.desktop.windows_x64)
+//	debugImplementation(compose.uiTooling)
+//	// TODO: do multiple distros for each os / arch combo
+//	extraNatives(compose.desktop.linux_x64)
+//	extraNatives(compose.desktop.macos_x64)
+//	extraNatives(compose.desktop.macos_arm64)
+//	extraNatives(compose.desktop.windows_x64)
 }
 val versionName = "${project.version}"
 
@@ -169,40 +157,7 @@ buildConfig {
 	buildConfigField<String>("PUBLISHER", "Linnea Gräf")
 }
 
-android {
-	namespace = "moe.nea.frobchat"
-	compileSdk = libs.versions.android.compileSdk.get().toInt()
-
-	defaultConfig {
-		applicationId = "moe.nea.frobchat"
-		minSdk = libs.versions.android.minSdk.get().toInt()
-		targetSdk = libs.versions.android.targetSdk.get().toInt()
-		versionCode = 1
-		versionName = versionName
-	}
-	packaging {
-		resources {
-			excludes += "/META-INF/{AL2.0,LGPL2.1}"
-		}
-	}
-	buildTypes {
-		getByName("release") {
-			isMinifyEnabled = false
-		}
-	}
-	composeOptions {
-		kotlinCompilerExtensionVersion = libs.versions.composeMultiplatform.get()
-	}
-	compileOptions {
-		sourceCompatibility = JavaVersion.VERSION_11
-		targetCompatibility = JavaVersion.VERSION_11
-	}
-	buildFeatures {
-		compose = true
-	}
-}
-
-val allDesktopJars by tasks.registering(Copy::class) {
+val allDesktopJars = tasks.register("allDesktopJars", Copy::class) {
 	from(configurations.named("desktopRuntimeClasspath"))
 	from(tasks.named("desktopJar"))
 	from(extraNatives)

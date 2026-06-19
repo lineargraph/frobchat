@@ -5,7 +5,8 @@ dependencies {
 	api(projects.json.library)
 }
 
-val generateJsonSources by tasks.registering(JavaExec::class) {
+java.toolchain.languageVersion.set(JavaLanguageVersion.of(21))
+val generateJsonSources = tasks.register("generateJsonSources", JavaExec::class) {
 	this.classpath(configurations.detachedConfiguration(projects.json.generator))
 	this.mainClass = "moe.nea.frobjson.generator.GenerateOpenApiSchemas"
 	val schemaFile = file("matrix-client-server-api-v1.18.json")

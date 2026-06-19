@@ -5,6 +5,7 @@ import com.palantir.javapoet.*;
 import moe.nea.frobjson.generator.GenerationContext;
 import moe.nea.frobjson.generator.SchemaStringType;
 import moe.nea.frobjson.generator.TypeUtils;
+import moe.nea.frobjson.internal.OperationUtil;
 import moe.nea.frobjson.openapi.Operation;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
@@ -32,6 +33,15 @@ public record OpenApiOperation(
 		if (requestBody == null)
 			return ClassName.get(Operation.EmptyBody.class);
 		return clsName.nestedClass("Body");
+	}
+
+	public @Nullable OpenApiResponse successResponse() {
+		return responses.get(200);
+	}
+
+	public TypeName successTyp() {
+		var succ = successResponse();
+		return succ != null ? succ.schema().typeName() : responsesTyp();
 	}
 
 	public ClassName responsesTyp() {
@@ -122,7 +132,7 @@ public record OpenApiOperation(
 	}
 
 	private TypeSpec buildResponseSuperclass(ClassName responsesTyp, ClassName clsName) {
-		return TypeSpec
+		var typ = TypeSpec
 			.interfaceBuilder(responsesTyp.simpleName())
 			.addModifiers(Modifier.PUBLIC, Modifier.STATIC, Modifier.SEALED)
 			.addPermittedSubclasses(
@@ -143,8 +153,16 @@ public record OpenApiOperation(
 				)
 				.addStatement("default -> throw new $T($S + statusCode)", RuntimeException.class, "Unknown status code: ")
 				.endControlFlow("")
-				.build())
-			.build();
+				.build());
+
+		var succ = successResponse();
+		if (succ != null)
+			typ.addMethod(MethodSpec.methodBuilder("asSuccess")
+				.returns(succ.schema().typeName())
+				.addModifiers(Modifier.PUBLIC, Modifier.ABSTRACT)
+				.build());
+
+		return typ.build();
 	}
 
 	private MethodSpec buildPathGenerator(TypeName parameters) {
@@ -170,7 +188,7 @@ public record OpenApiOperation(
 
 	}
 
-	private static TypeSpec buildResponse(
+	private TypeSpec buildResponse(
 		int statusCode,
 		OpenApiResponse response, ClassName clsName,
 		@Nullable ClassName superTyp) {
@@ -200,6 +218,21 @@ public record OpenApiOperation(
 		if (superTyp != null)
 			builder.addSuperinterface(superTyp);
 
+		var succ = this.successResponse();
+		if (succ != null) {
+			var method = statusCode == 200
+				? MethodSpec.methodBuilder("asSuccess")
+				.returns(succ.schema().typeName())
+				.addModifiers(Modifier.PUBLIC)
+				.addStatement("return this.body()")
+				: MethodSpec.methodBuilder("asSuccess")
+				.returns(succ.schema().typeName())
+				.addModifiers(Modifier.PUBLIC)
+				.addStatement("throw $T.errorForResponse(this)", OperationUtil.class);
+			if (superTyp != null)
+				method.addAnnotation(Override.class);
+			builder.addMethod(method.build());
+		}
 		return builder.build();
 	}
 

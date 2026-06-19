@@ -77,7 +77,7 @@ public class JavaHttpClient implements ApiExecutor {
 
 	private <B extends Operation.Body> HttpRequest.BodyPublisher publisherFor(B body) {
 		switch (body) {
-			case Operation.EmptyBody _ -> {
+			case Operation.EmptyBody ignored -> {
 				return HttpRequest.BodyPublishers.noBody();
 			}
 			case Operation.JsonBody<?> jsonBody -> {

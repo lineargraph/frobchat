@@ -110,12 +110,12 @@ public class OpenApiSupport {
 			.addMethods(StreamUtil.iterable(operations.stream()
 				.map(operation -> MethodSpec.methodBuilder(operation.operationId())
 					.addModifiers(Modifier.PUBLIC)
-					.returns(ParameterizedTypeName.get(ClassName.get(CompletableFuture.class), operation.responsesTyp()))
+					.returns(ParameterizedTypeName.get(ClassName.get(CompletableFuture.class), operation.successTyp()))
 					.addParameters(StreamUtil.iterable(operation.parameters()
 						.stream()
 						.map(par -> ParameterSpec.builder(par.type(), par.fieldName()).build())))
 					.addParameter(operation.bodyType(), "body")
-					.addStatement(CodeBlock.of("return this.executor().executeOperation($T.INSTANCE,\n$L,\n$L)",
+					.addStatement(CodeBlock.of("return this.executor().executeOperation($T.INSTANCE,\n$L,\n$L)$L",
 						operation.clsName(),
 						CodeBlock.of("new $T.Parameters($L)",
 							operation.clsName(),
@@ -123,22 +123,25 @@ public class OpenApiSupport {
 								.stream()
 								.map(it -> CodeBlock.of("$L", it.fieldName()))
 								.collect(CodeBlock.joining(",\n"))),
-						"body"
+						"body",
+						operation.successResponse() != null
+							? CodeBlock.of(".thenApply($T::asSuccess)", operation.responsesTyp())
+							: ""
 					))
 					.build())))
 			.addMethods(StreamUtil.iterable(operations.stream()
 				.filter(it -> it.requestBody() == null)
 				.map(operation -> MethodSpec.methodBuilder(operation.operationId())
 					.addModifiers(Modifier.PUBLIC)
-					.returns(ParameterizedTypeName.get(ClassName.get(CompletableFuture.class), operation.responsesTyp()))
+					.returns(ParameterizedTypeName.get(ClassName.get(CompletableFuture.class), operation.successTyp()))
 					.addParameters(StreamUtil.iterable(operation.parameters()
 						.stream()
 						.map(par -> ParameterSpec.builder(par.type(), par.fieldName()).build())))
 					.addStatement(CodeBlock.of("return this.$L($L)",
 						operation.operationId(),
 						Stream.concat(operation.parameters()
-							.stream()
-							.map(it -> CodeBlock.of("$L", it.fieldName())),
+								.stream()
+								.map(it -> CodeBlock.of("$L", it.fieldName())),
 							Stream.of(CodeBlock.of("$T.EMPTY_BODY", Operation.class))
 						).collect(CodeBlock.joining(",\n"))))
 					.build())));
