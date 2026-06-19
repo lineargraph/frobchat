@@ -1,10 +1,8 @@
 package moe.nea.frobjson.generator;
 
 import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
 import com.palantir.javapoet.*;
 import moe.nea.frobjson.internal.JsonUtil;
-import moe.nea.frobjson.internal.SchemaAllOf;
 import moe.nea.frobjson.internal.SchemaOneOf;
 import moe.nea.frobjson.internal.StreamUtil;
 import org.jspecify.annotations.NullMarked;

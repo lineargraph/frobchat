@@ -73,8 +73,9 @@ kotlin {
 //			implementation(libs.androidx.navigation.ui)
 //			implementation(libs.androidx.navigation.features.fragment)
 
-			implementation(libs.trixinity.client)
+//			implementation(libs.trixinity.client)
 			implementation(libs.ktor.client.core)
+			implementation(projects.json.matrix)
 
 			// Logging
 			implementation(libs.kotlinLogging)

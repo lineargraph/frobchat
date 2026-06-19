@@ -43,15 +43,23 @@ import io.ktor.http.Url
 import moe.nea.frobchat.build.BuildConfig
 import moe.nea.frobchat.config.findPreference
 import moe.nea.frobchat.layouts.CenterColumn
+import moe.nea.frobchat.matrixapi.MatrixAuthentication
+import moe.nea.frobchat.matrixapi.models.Login2
+import moe.nea.frobchat.matrixapi.operations.GetLoginFlows
+import moe.nea.frobchat.matrixapi.operations.GetWellknown
+import moe.nea.frobchat.matrixapi.operations.Login
 import moe.nea.frobchat.util.FrobRoute
 import moe.nea.frobchat.util.findGlobalNavController
 import moe.nea.frobchat.util.getHostname
 import moe.nea.frobchat.util.matrix.createMatrixThinClient
+import moe.nea.frobchat.util.matrix.execute
 import moe.nea.frobchat.views.components.Throbber
+import moe.nea.frobjson.openapi.Operation
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.future.asCompletableFuture
+import kotlinx.coroutines.future.await
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import kotlin.coroutines.CoroutineContext
@@ -79,12 +87,12 @@ object WelcomePage : FrobRoute {
 			delay(0.6.seconds)
 			setHomeServerState(HomeServerState.QUERYING)
 			val client = createMatrixThinClient(
-				MatrixClientAuthProviderData.unauthenticated(
-					Url("https://${server.text}/") // TODO: parse potential existing https url
+				MatrixAuthentication.anon(
+					"https://${server.text}/" // TODO: parse potential existing https url
 				)
 			)
-			val wellKnown = client.discovery.getWellKnown()
-			val homeServerBaseUrl = wellKnown.getOrNull()?.homeserver?.baseUrl
+			val wellKnown = client.execute(GetWellknown.INSTANCE, GetWellknown.Parameters())
+			val homeServerBaseUrl = wellKnown.getOrNull()?.body?.mHomeserver()?.baseUrl()
 			if (homeServerBaseUrl != null) {
 				setHomeServerState(HomeServerState.SUCCESS(homeServerBaseUrl))
 			} else {
@@ -140,20 +148,8 @@ data class LoginPage(val homeserver: String) : FrobRoute {
 	override fun Content() {
 		val nav = findGlobalNavController()
 		val client = createMatrixThinClient(
-			MatrixClientAuthProviderData.unauthenticated(Url(homeserver))
+			MatrixAuthentication.anon(homeserver)
 		)
-		val loginTypes = useRequest(homeserver) {
-			logger.info { "Requesting login types from $homeserver" }
-			client.authentication.getLoginTypes()
-				.getOrNull()
-				?.filter {
-					when (it) {
-						is LoginType.Password -> true
-						is LoginType.SSO -> it.identityProviders.isNotEmpty()
-						else -> false
-					}
-				}
-		}
 		val coroutineScope = rememberCoroutineScope()
 		val (username, setUsername) = remember { mutableStateOf(TextFieldValue("")) }
 		val (password, setPassword) = remember { mutableStateOf(TextFieldValue("")) }
@@ -179,6 +175,9 @@ data class LoginPage(val homeserver: String) : FrobRoute {
 					setLoginState(LoginState.NEUTRAL)
 					coroutineScope.launch {
 						logger.info { "Trying to log in." }
+						client.execute(Login.INSTANCE, Login.Parameters(), Login.Body(Login2(
+							null, null, null, null, null, null, null, null, null, null
+						)))
 						client.authentication.login(
 							identifier = IdentifierType.User(username.text),
 							password = password.text,
