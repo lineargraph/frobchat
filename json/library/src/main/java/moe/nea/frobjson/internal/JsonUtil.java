@@ -1,14 +1,15 @@
 package moe.nea.frobjson.internal;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonPrimitive;
+import com.google.gson.*;
 import org.jetbrains.annotations.Contract;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -34,6 +35,12 @@ public class JsonUtil {
 	public static @Nullable String getStringOrNull(@Nullable JsonElement element) {
 		if (element == null) return null;
 		return element.getAsString();
+	}
+
+	public static @Nullable String getStringOrNull(@Nullable JsonElement element, String name) {
+		if (element == null) return null;
+		if (!(element instanceof JsonObject object)) return null;
+		return getStringOrNull(object.get(name));
 	}
 
 	public static Stream<Map.Entry<String, JsonElement>> streamEntries(JsonObject object) {
@@ -96,6 +103,13 @@ public class JsonUtil {
 			return object;
 		}
 		return b;
+	}
+
+	public static final Gson GSON = new Gson();
+	public static JsonElement loadJson(Path path) throws IOException {
+		try (var input = Files.newBufferedReader(path, StandardCharsets.UTF_8)) {
+			return GSON.fromJson(input, JsonElement.class);
+		}
 	}
 
 	public static JsonObject jsonObjectOrEmpty(@Nullable JsonElement content) {

@@ -1,0 +1,18 @@
+{
+	"$schema": "./meta/extended-type.json",
+	"extendsType": "User identifier",
+	"typeKey": "type",
+	"types": {
+		"m.id.user": {
+			"type": "object",
+			"properties": {
+				"user": {
+					"type": "string"
+				}
+			},
+			"required": [
+				"user"
+			]
+		}
+	}
+}

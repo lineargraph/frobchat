@@ -7,7 +7,7 @@ import com.palantir.javapoet.TypeName;
 
 import java.util.List;
 
-public interface SchemaType {
+public interface SchemaType extends Generatable {
 	default SchemaType unlazy() {
 		return this;
 	}
@@ -18,8 +18,6 @@ public interface SchemaType {
 
 	default void decorateField(FieldSpec.Builder field) {
 	}
-
-	List<? extends JavaFile> emitFiles();
 
 	default CodeBlock deserializeLambda(String variableName) {
 		return CodeBlock.of("$L -> $L", variableName, accessDeserialize(variableName));

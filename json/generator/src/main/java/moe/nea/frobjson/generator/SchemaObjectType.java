@@ -19,7 +19,6 @@ import static moe.nea.frobjson.generator.TypeUtils.buildSuppressWarnings;
 public class SchemaObjectType implements SchemaType {
 	GenerationContext context;
 	JsonObject definition;
-	String name;
 	Set<String> requiredProps;
 	List<SchemaProperty> properties;
 	ClassName typeName;
@@ -27,20 +26,18 @@ public class SchemaObjectType implements SchemaType {
 
 	@Override
 	public String toString() {
-		return "Object[" + name + "]";
+		return "Object[" + typeName.simpleName() + "]";
 	}
 
 	public SchemaObjectType(
 		GenerationContext context,
 		JsonObject definition,
-		String propertyName,
-		@Nullable SchemaType parent
+		ClassName typeName
 	) {
 		assert "object".equals(JsonUtil.getStringOrNull(definition.get("type")));
 		this.definition = definition;
 		this.context = context;
-		this.name = context.typeNames.allocateName(context.guessName(propertyName, parent, definition));
-		this.typeName = ClassName.get(context.packageName, name);
+		this.typeName = typeName;
 		this.requiredProps = JsonUtil.streamOrEmpty(definition.get("required")).map(JsonElement::getAsString).collect(Collectors.toSet());
 		this.properties = JsonUtil.streamEntriesOrEmpty(definition.get("properties"))
 			.map(prop -> {
@@ -103,7 +100,7 @@ public class SchemaObjectType implements SchemaType {
 			.addAnnotation(Override.class)
 			.addModifiers(Modifier.PUBLIC)
 			.returns(String.class)
-			.addCode("return $S\n", name + " { ");
+			.addCode("return $S\n", typeName.simpleName() + " { ");
 
 		for (var prop : properties) {
 			toString.addCode("    + $S + this.$L + $S\n", prop.propName() + "=", prop.fieldName(), ", ");
@@ -162,12 +159,10 @@ public class SchemaObjectType implements SchemaType {
 	}
 
 
-
-	@Override
-	public List<JavaFile> emitFiles() {
+	public TypeSpec.Builder buildClass() {
 		var cls = TypeSpec.classBuilder(typeName)
 			.addSuperinterface(SchemaObject.class)
-			.addModifiers(Modifier.PUBLIC, Modifier.FINAL)
+			.addModifiers(Modifier.PUBLIC)
 			.addAnnotation(NullMarked.class)
 			.addAnnotation(buildSuppressWarnings(Stream.of("unused", "RedundantSuppression")))
 			.addField(buildJsonField())
@@ -179,16 +174,20 @@ public class SchemaObjectType implements SchemaType {
 			.addMethod(buildAsJson())
 			.addMethod(buildDecode());
 
-//		cls.addMethod(MethodSpec.methodBuilder("shallowWithoutExtras").build())
+		return cls;
+	}
+
+	@Override
+	public List<JavaFile> emitFiles() {
 		return List.of(JavaFile
-			.builder(context.packageName, cls.build())
+			.builder(context.modelPackageName, buildClass().build())
 			.build());
 	}
 
 
 	@Override
 	public String name() {
-		return name;
+		return typeName.simpleName();
 	}
 
 	@Override

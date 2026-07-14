@@ -14,9 +14,15 @@ val generateJsonSources = tasks.register("generateJsonSources", JavaExec::class)
 	var destinationFolder = layout.buildDirectory.dir("generated/sources/jsonschema")
 	this.outputs.dir(destinationFolder)
 	this.args(
+		destinationFolder.get().asFile.absolutePath,
+		"-modelPackage",
+		"moe.nea.frobchat.matrixapi.model",
+		"-operationPackage",
+		"moe.nea.frobchat.matrixapi.operations",
+		"-openApi",
 		schemaFile.absolutePath,
-		"moe.nea.frobchat.matrixapi",
-		destinationFolder.get().asFile.absolutePath
+		"-extendType",
+		file("src/main/schemas/user-identifiers.json").absolutePath,
 	)
 	this.doFirst {
 		destinationFolder.get().asFile.deleteRecursively()

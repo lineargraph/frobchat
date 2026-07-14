@@ -16,7 +16,8 @@ public class GenerateSingleSchema {
 		var packageName = args[1];
 		var baseName = args[2];
 		var destinationDirectory = Path.of(args[3]);
-		var ctx = new GenerationContext(packageName);
+		var ctx = new GenerationContext();
+		ctx.modelPackageName = packageName;
 
 		JsonElement schemaJson;
 		try (var input = Files.newBufferedReader(sourceFile, StandardCharsets.UTF_8)) {

@@ -2,6 +2,7 @@ package moe.nea.frobjson.generator.openapi;
 
 import com.google.gson.JsonElement;
 import com.palantir.javapoet.*;
+import moe.nea.frobjson.generator.Generatable;
 import moe.nea.frobjson.generator.GenerationContext;
 import moe.nea.frobjson.generator.SchemaStringType;
 import moe.nea.frobjson.generator.TypeUtils;
@@ -27,7 +28,7 @@ public record OpenApiOperation(
 	@Nullable OpenApiRequestBody requestBody,
 	List<OpenApiParameter> parameters,
 	Map<Integer, OpenApiResponse> responses
-) {
+) implements Generatable {
 
 	public TypeName bodyType() {
 		if (requestBody == null)
@@ -48,7 +49,7 @@ public record OpenApiOperation(
 		return clsName.nestedClass("Response");
 	}
 
-	public JavaFile emitJavaFile(GenerationContext ctx) {
+	public JavaFile emitJavaFile() {
 		var operationCls = TypeSpec.classBuilder(clsName)
 			.addAnnotation(NullMarked.class)
 			.addModifiers(Modifier.PUBLIC, Modifier.FINAL);
@@ -329,4 +330,8 @@ public record OpenApiOperation(
 		return parameterCls.build();
 	}
 
+	@Override
+	public List<? extends JavaFile> emitFiles() {
+		return List.of(emitJavaFile());
+	}
 }

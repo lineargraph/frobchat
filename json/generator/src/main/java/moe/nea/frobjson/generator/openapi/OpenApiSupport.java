@@ -24,7 +24,7 @@ import java.util.stream.Stream;
 import static moe.nea.frobjson.internal.JsonUtil.jsonObjectOrEmpty;
 
 public class OpenApiSupport {
-	public static Stream<JavaFile> generateAllSchemasFromOpenApi(
+	public static void generateAllSchemasFromOpenApi(
 		GenerationContext ctx, JsonElement openApiDoc
 	) {
 		var clientName = ClassName.get(ctx.operationPackageName, ctx.operationTypeNames.allocateName("Client"));
@@ -92,60 +92,9 @@ public class OpenApiSupport {
 						responses
 					);
 				})).toList();
-		return Stream.concat(
-			Stream.of(createClient(clientName, operations)),
-			operations.stream().map(it -> it.emitJavaFile(ctx)));
-	}
-
-	private static JavaFile createClient(ClassName clientName, List<OpenApiOperation> operations) {
-		var typ = TypeSpec.classBuilder(clientName)
-			.addModifiers(Modifier.PUBLIC)
-			.superclass(ApiClient.class)
-			.addAnnotation(TypeUtils.buildSuppressWarnings(Stream.of("unused")))
-			.addMethod(MethodSpec.constructorBuilder()
-				.addModifiers(Modifier.PUBLIC)
-				.addParameter(ApiExecutor.class, "executor")
-				.addStatement("super(executor)")
-				.build())
-			.addMethods(StreamUtil.iterable(operations.stream()
-				.map(operation -> MethodSpec.methodBuilder(operation.operationId())
-					.addModifiers(Modifier.PUBLIC)
-					.returns(ParameterizedTypeName.get(ClassName.get(CompletableFuture.class), operation.successTyp()))
-					.addParameters(StreamUtil.iterable(operation.parameters()
-						.stream()
-						.map(par -> ParameterSpec.builder(par.type(), par.fieldName()).build())))
-					.addParameter(operation.bodyType(), "body")
-					.addStatement(CodeBlock.of("return this.executor().executeOperation($T.INSTANCE,\n$L,\n$L)$L",
-						operation.clsName(),
-						CodeBlock.of("new $T.Parameters($L)",
-							operation.clsName(),
-							operation.parameters()
-								.stream()
-								.map(it -> CodeBlock.of("$L", it.fieldName()))
-								.collect(CodeBlock.joining(",\n"))),
-						"body",
-						operation.successResponse() != null
-							? CodeBlock.of(".thenApply($T::asSuccess)", operation.responsesTyp())
-							: ""
-					))
-					.build())))
-			.addMethods(StreamUtil.iterable(operations.stream()
-				.filter(it -> it.requestBody() == null)
-				.map(operation -> MethodSpec.methodBuilder(operation.operationId())
-					.addModifiers(Modifier.PUBLIC)
-					.returns(ParameterizedTypeName.get(ClassName.get(CompletableFuture.class), operation.successTyp()))
-					.addParameters(StreamUtil.iterable(operation.parameters()
-						.stream()
-						.map(par -> ParameterSpec.builder(par.type(), par.fieldName()).build())))
-					.addStatement(CodeBlock.of("return this.$L($L)",
-						operation.operationId(),
-						Stream.concat(operation.parameters()
-								.stream()
-								.map(it -> CodeBlock.of("$L", it.fieldName())),
-							Stream.of(CodeBlock.of("$T.EMPTY_BODY", Operation.class))
-						).collect(CodeBlock.joining(",\n"))))
-					.build())));
-
-		return JavaFile.builder(clientName.packageName(), typ.build()).build();
+		ctx.enqueue(new ClientGenerator(
+			clientName, operations
+		));
+		operations.stream().forEach(ctx::enqueue);
 	}
 }

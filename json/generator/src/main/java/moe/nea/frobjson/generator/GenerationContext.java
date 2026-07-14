@@ -3,8 +3,10 @@ package moe.nea.frobjson.generator;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.palantir.javapoet.ClassName;
 import com.palantir.javapoet.JavaFile;
 import moe.nea.frobjson.internal.JsonUtil;
+import moe.nea.frobjson.internal.SchemaObject;
 import moe.nea.frobjson.internal.StreamUtil;
 import org.jspecify.annotations.Nullable;
 
@@ -14,18 +16,24 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class GenerationContext {
-	public GenerationContext(String packageName) {
-		this.packageName = packageName;
-		this.operationPackageName = packageName;
-	}
 
-	String packageName;
+	public String modelPackageName;
 	public String operationPackageName;
 	NameCollection typeNames = new NameCollection(true);
 	public NameCollection operationTypeNames = new NameCollection(true);
+	Map<String, SchemaType> typeByTitle = new HashMap<>();
+
+	public @Nullable SchemaType typeByTitle(String name) {
+		return typeByTitle.get(name);
+	}
+
 	List<SchemaType> allTypes = new ArrayList<>();
-	List<SchemaType> todos = new ArrayList<>();
+	PriorityQueue<Generatable> todos = new PriorityQueue<>(Generatable.COMPARATOR);
 	List<JavaFile> files = new ArrayList<>();
+
+	public void addSchema(SchemaType schema) {
+		allTypes.add(schema);
+	}
 
 	public String guessName(
 		String propertyName,
@@ -54,14 +62,16 @@ public class GenerationContext {
 
 	public List<JavaFile> generateClosure() {
 		while (!todos.isEmpty()) {
-			var myTodos = todos;
-			todos = new ArrayList<>();
-			for (var todo : myTodos) {
-				files.addAll(todo.emitFiles());
-			}
+			var todo = todos.poll();
+			files.addAll(todo.emitFiles());
 		}
 		return files;
 	}
+
+	public void enqueue(Generatable generatable) {
+		todos.add(generatable);
+	}
+
 
 	private SchemaType constructSchema(String propertyName, JsonElement value, @Nullable SchemaType parent) {
 		var obj = value.getAsJsonObject();
@@ -108,7 +118,8 @@ public class GenerationContext {
 
 		var type = obj.get("type").getAsString();
 		return switch (type) {
-			case "object" -> new SchemaObjectType(this, obj, propertyName, parent);
+			case "object" ->
+				new SchemaObjectType(this, obj, ClassName.get(modelPackageName, typeNames.allocateName(guessName(propertyName, parent, obj))));
 			case "string" -> new SchemaStringType();
 			case "integer" -> new SchemaIntegerType();
 			case "boolean" -> new SchemaBooleanType();
@@ -119,6 +130,7 @@ public class GenerationContext {
 	}
 
 	Map<SchemaKey, LazySchema> schemaCache = new HashMap<>();
+
 
 	public record SchemaKey(
 		JsonElement element,
@@ -163,9 +175,12 @@ public class GenerationContext {
 					}
 				})
 			);
-		schema.get(); // Force instantiation, we only need lazy to deal with potential cycles
+		var title = JsonUtil.getStringOrNull(value, "title");
+		if (title != null)
+			typeByTitle.put(title, schema);
 		allTypes.add(schema);
 		todos.add(schema);
+		schema.get(); // Force instantiation, we only need lazy to deal with potential cycles
 		return schema;
 	}
 

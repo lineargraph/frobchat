@@ -1,37 +1,29 @@
 package moe.nea.frobjson.generator;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonElement;
+import com.palantir.javapoet.JavaFile;
 import moe.nea.frobjson.generator.openapi.OpenApiSupport;
+import moe.nea.frobjson.internal.JsonUtil;
+import moe.nea.frobjson.internal.StreamUtil;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
 
 public class GenerateOpenApiSchemas {
 	public static void main(
 		String[] args
 	) throws IOException {
-		var sourceFile = Path.of(args[0]);
-		var packageName = args[1];
-		var destinationDirectory = Path.of(args[2]);
-		var ctx = new GenerationContext(packageName + ".models");
-		ctx.operationPackageName = packageName + ".operations";
-
-		JsonElement openApiJson;
-		try (var input = Files.newBufferedReader(sourceFile, StandardCharsets.UTF_8)) {
-			openApiJson = new Gson().fromJson(input, JsonElement.class);
+		var destinationDirectory = Path.of(args[0]);
+		int i = 0;
+		var ctx = new GenerationContext();
+		while (++i < args.length) {
+			switch (args[i]) {
+				case "-operationPackage" -> ctx.operationPackageName = args[++i];
+				case "-modelPackage" -> ctx.modelPackageName = args[++i];
+				case "-extendType" -> ExtendedType.generate(ctx, JsonUtil.loadJson(Path.of(args[++i])));
+				case "-openApi" -> OpenApiSupport.generateAllSchemasFromOpenApi(ctx, JsonUtil.loadJson(Path.of(args[++i])));
+				default -> throw new RuntimeException("Unknown argument: " + args[i]);
+			}
 		}
-
-		OpenApiSupport.generateAllSchemasFromOpenApi(ctx, openApiJson)
-			.forEach(it -> {
-				try {
-					it.writeTo(destinationDirectory);
-				} catch (IOException e) {
-					throw new RuntimeException(e);
-				}
-			});
 
 		ctx.writeClosure(destinationDirectory);
 	}

@@ -32,7 +32,7 @@ public class SchemaOneOfType implements SchemaType {
 
 	public SchemaOneOfType(GenerationContext context, String name, List<SchemaType> aspects) {
 		this.name = name;
-		this.typeName = ClassName.get(context.packageName, name);
+		this.typeName = ClassName.get(context.modelPackageName, name);
 		var names = new NameCollection(false);
 		this.variants = aspects.stream()
 			.map(it -> new Variant(it, names.allocateName(it.name())))

@@ -1,0 +1,24 @@
+{
+	"$schema": "http://json-schema.org/draft-07/schema#",
+	"$id": "https://frobjson.nea.moe/extended-type",
+	"properties": {
+		"extendsType": {
+			"type": "string"
+		},
+		"typeKey": {
+			"type": "string"
+		},
+		"types": {
+			"type": "object",
+			"additionalProperties": {
+				"$ref": "https://json-schema.org/draft-07/schema#"
+			}
+		}
+	},
+	"required": [
+		"typeKey",
+		"extendsType",
+		"types"
+	],
+	"type": "object"
+}

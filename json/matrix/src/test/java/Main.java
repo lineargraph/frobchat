@@ -1,5 +1,6 @@
 import moe.nea.frobchat.matrixapi.MatrixAuthentication;
 import moe.nea.frobchat.matrixapi.MatrixClient;
+import moe.nea.frobchat.matrixapi.model.UserIdentifierExt;
 import moe.nea.frobchat.matrixapi.operations.GetLoginFlows;
 
 import java.net.http.HttpClient;
@@ -18,5 +19,6 @@ public class Main {
 			MatrixAuthentication.anon("https://matrix.nea.moe")
 		);
 		System.out.println(client.getLoginFlows().join());
+		System.out.println(new UserIdentifierExt.MIdUser("nea").asJson());
 	}
 }
