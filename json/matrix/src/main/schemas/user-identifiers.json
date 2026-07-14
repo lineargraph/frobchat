@@ -3,6 +3,23 @@
 	"extendsType": "User identifier",
 	"typeKey": "type",
 	"types": {
+		"m.id.phone": {
+			"type": "object",
+			"properties": {
+				"country": {
+					"type": "string",
+					"description": "A two letter uppercase ISO-3166-1 alpha-2 country code"
+				},
+				"phone": {
+					"type": "string",
+					"description": "A phone number, to be canonicalized by the server"
+				}
+			},
+			"required": [
+				"country",
+				"phone"
+			]
+		},
 		"m.id.user": {
 			"type": "object",
 			"properties": {

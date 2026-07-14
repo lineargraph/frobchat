@@ -13,6 +13,10 @@ public class SchemaExtensionObjectType extends SchemaObjectType {
 	private final String typeKey;
 	private final String typeId;
 
+	public String typeId() {
+		return typeId;
+	}
+
 	public SchemaExtensionObjectType(
 		GenerationContext context, JsonObject definition, ClassName typeName,
 		SchemaObjectType baseType,

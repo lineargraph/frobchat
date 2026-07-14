@@ -10,7 +10,9 @@ import org.jspecify.annotations.Nullable;
 
 import javax.lang.model.element.Modifier;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -21,6 +23,7 @@ public class SchemaObjectType implements SchemaType {
 	JsonObject definition;
 	Set<String> requiredProps;
 	List<SchemaProperty> properties;
+	Map<String, SchemaProperty> indexedProperties;
 	ClassName typeName;
 	NameCollection fieldNames = new NameCollection(false);
 
@@ -51,6 +54,8 @@ public class SchemaObjectType implements SchemaType {
 					requiredProps.contains(prop.getKey())
 				);
 			}).toList();
+		this.indexedProperties = properties.stream()
+			.collect(Collectors.toMap(SchemaProperty::propName, Function.identity()));
 	}
 
 	MethodSpec buildGenerateJson() {

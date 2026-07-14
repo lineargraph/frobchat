@@ -13,6 +13,8 @@ val generateJsonSources = tasks.register("generateJsonSources", JavaExec::class)
 	this.inputs.file(schemaFile)
 	var destinationFolder = layout.buildDirectory.dir("generated/sources/jsonschema")
 	this.outputs.dir(destinationFolder)
+	val extendSchemas = project.file("src/main/schemas/user-identifiers.json")
+	this.inputs.file(extendSchemas) // TODO: auto collect all files in there
 	this.args(
 		destinationFolder.get().asFile.absolutePath,
 		"-modelPackage",
@@ -22,7 +24,7 @@ val generateJsonSources = tasks.register("generateJsonSources", JavaExec::class)
 		"-openApi",
 		schemaFile.absolutePath,
 		"-extendType",
-		file("src/main/schemas/user-identifiers.json").absolutePath,
+		extendSchemas.absolutePath,
 	)
 	this.doFirst {
 		destinationFolder.get().asFile.deleteRecursively()
