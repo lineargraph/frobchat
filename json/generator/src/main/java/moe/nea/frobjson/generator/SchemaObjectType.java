@@ -25,6 +25,9 @@ public class SchemaObjectType implements SchemaType {
 	List<SchemaProperty> properties;
 	Map<String, SchemaProperty> indexedProperties;
 	ClassName typeName;
+	@Nullable SchemaType additionalPropertiesType;
+	@Nullable TypeName additionalPropsMapType;
+
 	NameCollection fieldNames = new NameCollection(false);
 
 	@Override
@@ -56,9 +59,28 @@ public class SchemaObjectType implements SchemaType {
 			}).toList();
 		this.indexedProperties = properties.stream()
 			.collect(Collectors.toMap(SchemaProperty::propName, Function.identity()));
+		var additionalProperties = definition.get("additionalProperties");
+		// TODO: make shallow copies of JSON objects so we can use .remove
+		var patternProps = (JsonObject) definition.get("patternProperties");
+		if (patternProps != null) {
+			var pi = patternProps.entrySet().iterator();
+			var p = pi.next();
+			if (pi.hasNext()) throw new RuntimeException("I do not support multiple patternProperties yet");
+			var pattern = p.getKey();
+			if (additionalProperties == null)
+				additionalProperties = p.getValue();
+		}
+		if (additionalProperties != null) {
+
+			var propTyp = context.getSchemaForProperty("additional", additionalProperties, this);
+			if (!(propTyp.unlazy() instanceof SchemaJsonElement)) {
+				additionalPropertiesType = propTyp;
+				additionalPropsMapType = ParameterizedTypeName.get(ClassName.get(Map.class), ClassName.get(String.class), additionalPropertiesType.typeName());
+			}
+		}
 	}
 
-	MethodSpec buildGenerateJson() {
+	MethodSpec buildGenerateJson() { // TODO: handle additionalProperties
 		var encode = MethodSpec.methodBuilder("generateJson")
 			.returns(JsonElement.class)
 			.addAnnotation(buildSuppressWarnings(Stream.of("UnnecessaryLocalVariable", "Convert2MethodRef")))
@@ -97,6 +119,12 @@ public class SchemaObjectType implements SchemaType {
 			constructor.addParameter(prop.fieldType(), prop.fieldName())
 				.addStatement("this.$L = $L", prop.fieldName(), prop.fieldName());
 		}
+
+		if (additionalPropertiesType != null) {
+			constructor.addParameter(additionalPropsMapType, "additionalProperties")
+				.addStatement("this.additionalProperties = additionalProperties");
+		}
+
 		return constructor.build();
 	}
 
@@ -128,24 +156,27 @@ public class SchemaObjectType implements SchemaType {
 	}
 
 	MethodSpec buildDecode() {
-		return MethodSpec.methodBuilder("fromJson")
+		var spec = MethodSpec.methodBuilder("fromJson")
 			.returns(typeName)
 			.addModifiers(Modifier.STATIC, Modifier.PUBLIC)
 			.addAnnotation(buildSuppressWarnings(Stream.of("Convert2MethodRef", "RedundantTypeArguments")))
 			.addParameter(JsonElement.class, "$json")
 			.addStatement("$T $L = $L.getAsJsonObject()", JsonObject.class, "$json$object", "$json")
 			.addCode("$T $L = new $T(\n", typeName, "$constructed", typeName)
-			.addCode(
-				properties.stream()
-					.map(it -> CodeBlock.of("    $L", it.deserializerExpression("$json$object")))
-					.collect(CodeBlock.joining(",\n")))
+			.addCode(Stream.concat(
+					properties.stream()
+						.map(it -> CodeBlock.of("    $L", it.deserializerExpression("$json$object"))
+						), additionalPropertiesType != null ?
+						Stream.of(CodeBlock.of("    $T.collectAdditionalProperties($L, $L)", JsonUtil.class, "$json$object", additionalPropertiesType.deserializeLambda("it")))
+						: Stream.of())
+				.collect(CodeBlock.joining(",\n")))
 			.addStatement(")")
 			.addStatement("$L.$L = $L", "$constructed", "$json", "$json")
-			.addStatement("return $L", "$constructed")
-			.build();
+			.addStatement("return $L", "$constructed");
+		return spec.build();
 	}
 
-	MethodSpec buildAsJson() {
+	MethodSpec buildAsJson() {// TODO: handle additionalProperties
 		return MethodSpec.methodBuilder("asJson")
 			.addModifiers(Modifier.PUBLIC)
 			.returns(JsonElement.class)
@@ -179,6 +210,15 @@ public class SchemaObjectType implements SchemaType {
 			.addMethod(buildGenerateJson())
 			.addMethod(buildAsJson())
 			.addMethod(buildDecode());
+
+		if (additionalPropertiesType != null) {
+			cls.addField(FieldSpec.builder(additionalPropsMapType, "additionalProperties", Modifier.PRIVATE, Modifier.FINAL).build())
+				.addMethod(MethodSpec.methodBuilder("additionalProperties")
+					.returns(additionalPropsMapType)
+					.addModifiers(Modifier.PUBLIC)
+					.addStatement("return this.additionalProperties")
+					.build());
+		}
 
 		return cls;
 	}

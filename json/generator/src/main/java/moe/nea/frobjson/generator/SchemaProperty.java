@@ -29,7 +29,7 @@ public record SchemaProperty(
 			deserializer = CodeBlock.of("$T.<$T, $T>liftNullable($L)", JsonUtil.class, JsonElement.class, fieldType().withoutAnnotations(), deserializer);
 		}
 		return CodeBlock.of(
-			"$T.bind($L.get($S), $L)",
+			"$T.bind($L.remove($S), $L)",
 			JsonUtil.class,
 			jsonObjectExpression,
 			propName(),

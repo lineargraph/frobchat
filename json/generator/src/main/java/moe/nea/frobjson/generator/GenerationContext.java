@@ -3,6 +3,7 @@ package moe.nea.frobjson.generator;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
 import com.palantir.javapoet.ClassName;
 import com.palantir.javapoet.JavaFile;
 import moe.nea.frobjson.internal.JsonUtil;
@@ -74,6 +75,8 @@ public class GenerationContext {
 
 
 	private SchemaType constructSchema(String propertyName, JsonElement value, @Nullable SchemaType parent) {
+		if (value instanceof JsonPrimitive prim && prim.isBoolean() && prim.getAsBoolean())
+			return new SchemaJsonElement();
 		var obj = value.getAsJsonObject();
 		var allOf = obj.getAsJsonArray("allOf");
 		if (allOf != null) {
@@ -112,7 +115,7 @@ public class GenerationContext {
 			return new SchemaJsonElement();
 		}
 
-		if (obj.get("type") instanceof JsonArray array) {
+		if (obj.get("type") == null || obj.get("type") instanceof JsonArray array) {
 			return new SchemaJsonElement(); // TODO actually match on stuff..
 		}
 

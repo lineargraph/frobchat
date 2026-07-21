@@ -16,6 +16,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collector;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -136,6 +137,11 @@ public class JsonUtil {
 	public static void appendQuery(Map<? super String, ? super String> queryParameters, String key, @Nullable String value) {
 		if (value != null)
 			queryParameters.put(key, value);
+	}
+
+	public static <T> Map<String, T> collectAdditionalProperties(JsonObject element, Function<? super JsonElement, ? extends T> mapper) {
+		return element.entrySet().stream()
+			.collect(Collectors.toMap(Map.Entry::getKey, it -> mapper.apply(it.getValue())));
 	}
 
 	public interface ThrowingProvider<T> {
