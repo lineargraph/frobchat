@@ -10,3 +10,4 @@ dependencies {
 	api(libs.jbAnnotations)
 	api(libs.gson)
 }
+java.withSourcesJar()

@@ -35,4 +35,4 @@ sourceSets.main {
 	java.srcDir(generateJsonSources)
 }
 
-
+java.withSourcesJar()
