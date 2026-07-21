@@ -9,5 +9,6 @@ dependencies {
 	api(libs.jspecify)
 	api(libs.jbAnnotations)
 	api(libs.gson)
+	api(libs.slf4j.api)
 }
 java.withSourcesJar()

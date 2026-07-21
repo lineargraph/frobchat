@@ -42,12 +42,16 @@ public class JavaHttpClient implements ApiExecutor {
 			return HttpResponse.BodySubscribers.mapping(HttpResponse.BodySubscribers.ofString(StandardCharsets.UTF_8),
 				inputStream -> {
 					// TODO: lol utf8
+					JsonElement json;
 					try {
-						var json = new Gson().fromJson(inputStream, JsonElement.class);
-
-						return operation.fromResponse(status, json);
+						json = new Gson().fromJson(inputStream, JsonElement.class);
 					} catch (JsonSyntaxException ex) {
-						throw new RuntimeException("Could not parse JSON " + inputStream, ex);
+						throw new RequestParsingException("Could not parse JSON", inputStream, ex);
+					}
+					try {
+						return operation.fromResponse(status, json);
+					} catch (Exception e) {
+						throw new RequestParsingException("Could not unmarshal JSON for status " + status, inputStream, e);
 					}
 				});
 		};

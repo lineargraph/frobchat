@@ -23,7 +23,7 @@ kotlinx-coroutines = "1.10.2"
 androidNavigation = "2.9.0-beta01"
 androidx-sqlite = "2.6.2"
 serialization-json = "1.8.1"
-slf4jSimple = "2.0.17"
+slf4j = "2.0.17"
 materialIconsExtended = "1.7.3"
 vlcj = "4.11.0"
 voyager = "1.1.0-beta03"
@@ -62,7 +62,8 @@ androidx-lifecycle-runtimeCompose = { module = "org.jetbrains.androidx.lifecycle
 androidx-sqlite-bundled = { module = "androidx.sqlite:sqlite-bundled", version.ref = "androidx-sqlite" }
 kotlinx-coroutinesSwing = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-swing", version.ref = "kotlinx-coroutines" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "serialization-json" }
-slf4j-simple = { module = "org.slf4j:slf4j-simple", version.ref = "slf4jSimple" }
+slf4j-api = { module = "org.slf4j:slf4j-api",  version.ref = "slf4j" }
+slf4j-simple = { module = "org.slf4j:slf4j-simple", version.ref = "slf4j" }
 vlcj = { module = "uk.co.caprica:vlcj", version.ref = "vlcj" }
 voyager-navigator = { module = "cafe.adriel.voyager:voyager-navigator", version.ref = "voyager" }
 voyager-screenModel = { module = "cafe.adriel.voyager:voyager-screenmodel", version.ref = "voyager" }

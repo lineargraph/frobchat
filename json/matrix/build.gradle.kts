@@ -36,3 +36,4 @@ sourceSets.main {
 }
 
 java.withSourcesJar()
+java.withJavadocJar()

@@ -24,7 +24,8 @@
 			"type": "object",
 			"properties": {
 				"user": {
-					"type": "string"
+					"type": "string",
+					"description": "A client can identify a user using their Matrix ID. This can either be the fully qualified Matrix user ID, or just the localpart of the user ID."
 				}
 			},
 			"required": [
