@@ -35,7 +35,13 @@ public class TypeUtils {
 	public static String formatJavadoc(String description) {
 		var sb = new StringBuilder();
 		{
-			var matcher = linkPattern.matcher(description.replace("\n\n", "\n<br>\n"));
+			var matcher = linkPattern.matcher(description
+					.replace("&", "&amp;")
+					.replace("<", "&lt;")
+					.replace(">", "&gt;")
+					.replace("}", "&rcub;")
+					.replace("{", "&lcub;")
+				.replace("\n\n", "\n<br>\n"));
 			while (matcher.find()) {
 				matcher.appendReplacement(sb, "<a href=\"$2\">$1</a>");
 			}

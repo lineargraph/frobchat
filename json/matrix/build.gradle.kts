@@ -37,3 +37,7 @@ sourceSets.main {
 
 java.withSourcesJar()
 java.withJavadocJar()
+
+tasks.test {
+	failOnNoDiscoveredTests = false
+}
