@@ -31,8 +31,8 @@ public interface Operation<P extends Operation.Parameters, B extends Operation.B
 	EmptyBody EMPTY_BODY = new EmptyBody();
 
 	interface Parameters {
-		default Map<String, String> queryParameters() {
-			return Map.of();
+		default QueryParameters queryParameters() {
+			return QueryParameters.empty();
 		}
 
 		default String pathParameter(String name) {

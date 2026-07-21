@@ -31,6 +31,7 @@ public record OpenApiRequestBody(
 				.get(ClassName.get(Operation.JsonBody.class), schema().typeName()))
 			.addMethod(MethodSpec.methodBuilder("asJson")
 				.addModifiers(Modifier.PUBLIC)
+				.addAnnotation(Override.class)
 				.returns(TypeUtils.required(required(), ClassName.get(JsonElement.class)))
 				.addStatement("return $L", schema().accessSerialize("this.body()"))
 				.build())

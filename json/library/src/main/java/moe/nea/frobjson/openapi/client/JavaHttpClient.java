@@ -61,14 +61,7 @@ public class JavaHttpClient implements ApiExecutor {
 	) {
 		return HttpRequest.newBuilder()
 			.method(operation.method().toUpperCase(Locale.ROOT), publisherFor(body))
-			.uri(URI.create(baseUrl + operation.path(parameters) + buildQuery(parameters.queryParameters())));
-	}
-
-	private String buildQuery(Map<String, String> query) {
-		if (query.isEmpty()) return "";
-		return query.entrySet().stream()
-			.map(it -> urlEncode(it.getKey()) + "=" + urlEncode(it.getValue()))
-			.collect(Collectors.joining("&", "?", ""));
+			.uri(URI.create(baseUrl + operation.path(parameters) + parameters.queryParameters().asQueryString()));
 	}
 
 	public static String urlEncode(String raw) {

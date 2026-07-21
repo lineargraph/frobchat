@@ -6,8 +6,10 @@ import moe.nea.frobjson.generator.Generatable;
 import moe.nea.frobjson.generator.GenerationContext;
 import moe.nea.frobjson.generator.SchemaStringType;
 import moe.nea.frobjson.generator.TypeUtils;
+import moe.nea.frobjson.internal.JsonUtil;
 import moe.nea.frobjson.internal.OperationUtil;
 import moe.nea.frobjson.openapi.Operation;
+import moe.nea.frobjson.openapi.QueryParameters;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
@@ -17,6 +19,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public record OpenApiOperation(
 	ClassName clsName,
@@ -247,14 +250,14 @@ public record OpenApiOperation(
 
 		if (groupedPar.get(OpenApiParameter.In.QUERY) != null) {
 			parameterCls.addField(FieldSpec
-					.builder(TypeUtils.MAP_STR_STR, "$queryParameters")
+					.builder(QueryParameters.class, "$queryParameters")
 					.addModifiers(Modifier.PRIVATE, Modifier.FINAL)
-					.initializer("new $T<>()", LinkedHashMap.class)
+					.initializer("new $T()", QueryParameters.class)
 					.build())
 				.addMethod(MethodSpec.methodBuilder("queryParameters")
 					.addModifiers(Modifier.PUBLIC)
 					.addAnnotation(Override.class)
-					.returns(TypeUtils.MAP_STR_STR)
+					.returns(QueryParameters.class)
 					.addStatement("return this.$L", "$queryParameters")
 					.build());
 		}
@@ -269,6 +272,7 @@ public record OpenApiOperation(
 			parameterCls.addMethod(MethodSpec.methodBuilder("pathParameter")
 				.addModifiers(Modifier.PUBLIC)
 				.addAnnotation(Override.class)
+				.addAnnotation(TypeUtils.buildSuppressWarnings(Stream.of("SwitchStatementWithTooFewBranches")))
 				.addParameter(String.class, "name")
 				.returns(String.class)
 				.beginControlFlow("return switch (name)")
@@ -295,10 +299,9 @@ public record OpenApiOperation(
 					parameters.stream()
 						.map(it -> switch (it.in()) {
 							case PATH -> CodeBlock.of("this.$L = $L;\n", it.fieldName(), it.fieldName());
-							case QUERY -> CodeBlock.of("this.$L.put($S, $L);\n", "$queryParameters", it.name(),
-								it.schema().unlazy() instanceof SchemaStringType
-									? it.fieldName()
-									: CodeBlock.of("($L).getAsString()", it.schema().accessSerialize(it.fieldName())));
+							case QUERY ->
+								// TODO: replace this with something that maybe supports toplevel[childlevel] or similar keys
+								CodeBlock.of("this.$L.put($S, $L);\n", "$queryParameters", it.name(), it.fieldName());
 							case HEADER ->
 								CodeBlock.of("this.$L.put($S, $L);\n", "$headers", it.name(), it.fieldName());
 						})
@@ -321,7 +324,7 @@ public record OpenApiOperation(
 						.returns(it.in() == OpenApiParameter.In.PATH ? it.type() : TypeUtils.required(it.required(), ClassName.get(String.class)));
 					switch (it.in()) {
 						case HEADER -> method.addStatement("return this.$L.get($S)", "$headers", it.name());
-						case QUERY -> method.addStatement("return this.$L.get($S)", "$queryParameters", it.name());
+						case QUERY -> method.addStatement("return this.$L.getFirst($S)", "$queryParameters", it.name()); // TODO: return multiple
 						case PATH -> method.addStatement("return this.$L", it.name());
 					}
 					return method.build();

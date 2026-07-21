@@ -149,6 +149,7 @@ public class SchemaObjectType implements SchemaType {
 		return MethodSpec.methodBuilder("asJson")
 			.addModifiers(Modifier.PUBLIC)
 			.returns(JsonElement.class)
+			.addAnnotation(Override.class)
 			.beginControlFlow("if (this.$L == null)", "$json")
 			.addStatement("return this.$L = this.generateJson()", "$json")
 			.endControlFlow()

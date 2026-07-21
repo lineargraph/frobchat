@@ -106,6 +106,7 @@ public class JsonUtil {
 	}
 
 	public static final Gson GSON = new Gson();
+
 	public static JsonElement loadJson(Path path) throws IOException {
 		try (var input = Files.newBufferedReader(path, StandardCharsets.UTF_8)) {
 			return GSON.fromJson(input, JsonElement.class);
@@ -120,6 +121,21 @@ public class JsonUtil {
 
 	public static boolean getBooleanOrFalse(@Nullable JsonElement element) {
 		return element != null && element.getAsBoolean();
+	}
+
+	public static void appendQuery(Map<? super String, ? super String> queryParameters, String key, @Nullable Number value) {
+		if (value != null)
+			queryParameters.put(key, value.toString());
+	}
+
+	public static void appendQuery(Map<? super String, ? super String> queryParameters, String key, @Nullable Boolean value) {
+		if (value != null)
+			queryParameters.put(key, value.toString());
+	}
+
+	public static void appendQuery(Map<? super String, ? super String> queryParameters, String key, @Nullable String value) {
+		if (value != null)
+			queryParameters.put(key, value);
 	}
 
 	public interface ThrowingProvider<T> {
