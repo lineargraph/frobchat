@@ -13,6 +13,8 @@ val generateJsonSources = tasks.register("generateJsonSources", JavaExec::class)
 	this.inputs.file(schemaFile)
 	var destinationFolder = layout.buildDirectory.dir("generated/sources/jsonschema")
 	this.outputs.dir(destinationFolder)
+	val instantMessaging = project.file("src/main/schemas/instant-messaging.json")
+	this.inputs.file(instantMessaging)
 	val extendSchemas = project.file("src/main/schemas/user-identifiers.json")
 	this.inputs.file(extendSchemas) // TODO: auto collect all files in there
 	this.args(
@@ -23,6 +25,8 @@ val generateJsonSources = tasks.register("generateJsonSources", JavaExec::class)
 		"moe.nea.frobchat.matrixapi.operations",
 		"-openApi",
 		schemaFile.absolutePath,
+		"-extraTagged",
+		instantMessaging.absolutePath,
 		"-extendType",
 		extendSchemas.absolutePath,
 	)

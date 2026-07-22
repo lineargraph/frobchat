@@ -13,10 +13,17 @@
 			"additionalProperties": {
 				"$ref": "https://json-schema.org/draft-07/schema#"
 			}
+		},
+		"type": {
+			"type": "string",
+			"enum": [
+				"extended-type"
+			]
 		}
 	},
 	"required": [
 		"typeKey",
+		"type",
 		"extendsType",
 		"types"
 	],

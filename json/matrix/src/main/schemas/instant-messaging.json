@@ -1,0 +1,160 @@
+{
+	"type": "tagged-types",
+	"name": "Event Contents",
+	"by-tag": {
+		"m.room.canonical_alias": {
+			"title": "Canonical Alias",
+			"description": "This event is used to inform the room about which alias should be considered the canonical one, and which other aliases point to the room. This could be for display purposes or as suggestion to users which alias to use to advertise and access the room.",
+			"type": "object",
+			"properties": {
+				"alias": {
+					"type": "string",
+					"description": "The canonical alias for the room. If not present, null, or empty the room should be considered to have no canonical alias."
+				},
+				"alt_aliases": {
+					"type": "array",
+					"items": {
+						"type": "string"
+					},
+					"description": "Alternative aliases the room advertises. This list can have aliases despite the `alias` field being null, empty, or otherwise not present."
+				}
+			}
+		},
+		"m.room.create": {
+			"properties": {
+				"creator": {
+					"description": "The `user_id` of the room creator. **Required** for, and only present in, room versions 1 - 10. Starting with\nroom version 11 the event `sender` should be used instead.",
+					"type": "string",
+					"format": "mx-user-id",
+					"pattern": "^@"
+				},
+				"m.federate": {
+					"description": "Whether users on other servers can join this room. Defaults to `true` if key does not exist.",
+					"type": "boolean"
+				},
+				"room_version": {
+					"description": "The version of the room. Defaults to `\"1\"` if the key does not exist.",
+					"type": "string"
+				},
+				"type": {
+					"description": "Optional [room type](/client-server-api/#types) to denote a room's intended function outside of traditional\nconversation.\n\nUnspecified room types are possible using [Namespaced Identifiers](/appendices/#common-namespaced-identifier-grammar).",
+					"type": "string"
+				},
+				"predecessor": {
+					"description": "A reference to the room this room replaces, if the previous room was upgraded.",
+					"type": "object",
+					"title": "Previous Room",
+					"properties": {
+						"room_id": {
+							"type": "string",
+							"format": "mx-room-id",
+							"pattern": "^!",
+							"description": "The ID of the old room."
+						},
+						"event_id": {
+							"type": "string",
+							"format": "mx-event-id",
+							"pattern": "^\\$",
+							"deprecated": true,
+							"x-changedInMatrixVersion": {
+								"1.16": "This field became deprecated and may not be present in all cases. It SHOULD still\nbe populated where possible/practical. Previously, it was required."
+							},
+							"description": "The event ID of the last known event in the old room, if known.\n\nIf not set, clients SHOULD search for the `m.room.tombstone` state event to navigate to\nwhen directing the user to the old room (potentially after joining the room, if requested\nby the user)."
+						}
+					},
+					"required": [
+						"room_id"
+					]
+				},
+				"additional_creators": {
+					"type": "array",
+					"items": {
+						"type": "string",
+						"format": "mx-user-id",
+						"pattern": "^@",
+						"description": "Additional user ID to consider a creator of the room, if supported by the room version."
+					},
+					"x-addedInMatrixVersion": "1.16",
+					"description": "Starting with room version 12, the other user IDs to consider as creators for the room in\naddition to the `sender` of this event. Each string MUST be a valid [user ID](/appendices#user-identifiers)\nfor the room version.\n\nWhen not present or empty, the `sender` of the event is the only creator.\n\nIn room versions 1 through 11, this field serves no purpose and is not validated. Clients\nSHOULD NOT attempt to parse or understand this field in these room versions.\n\n**Note**: Because `creator` was removed in room version 11, the field is not used to determine\nwhich user(s) are room creators in room version 12 and beyond either."
+				}
+			},
+			"title": "Room Create",
+			"description": "This is the first event in a room and cannot be changed. It acts as the root of all other events.",
+			"type": "object"
+		},
+		"m.room.message": {
+			"type": "object",
+			"properties": {
+				"body": {
+					"description": "The textual representation of this message.",
+					"type": "string"
+				},
+				"msgtype": {
+					"description": "The type of message, e.g. `m.image`, `m.text`",
+					"type": "string"
+				}
+			},
+			"required": [
+				"body",
+				"msgtype"
+			],
+			"title": "Room Message",
+			"description": "This event is used when sending messages in a room. Messages are not limited to be text. The msgtype key outlines the type of message, e.g. text, audio, image, video, etc. The body key is text and MUST be used with every kind of msgtype as a fallback mechanism for when a client cannot render a message. This allows clients to display something even if it is just plain text."
+		},
+		"m.room.name": {
+			"type": "object",
+			"properties": {
+				"name": {
+					"type": "string",
+					"description": "The name of the room"
+				}
+			},
+			"required": [
+				"name"
+			],
+			"title": "Room Name",
+			"description": "A room has an opaque room ID which is not human-friendly to read. A room alias is human-friendly, but not all rooms have room aliases. The room name is a human-friendly string designed to be displayed to the end-user. The room name is not unique, as multiple rooms can have the same room name set.\n\nIf a room has an `m.room.name` event with an absent, null, or empty `name` field, it should be treated the same as a room with no `m.room.name` event.\n\nAn event of this type is automatically created when creating a room using `/createRoom` with the `name` key."
+		},
+		"m.room.topic": {
+			"type": "object",
+			"title": "Room Topic",
+			"properties": {
+				"topic": {
+					"type": "string",
+					"description": "The topic in plain text.\n\nThis SHOULD duplicate the content of the `text/plain` representation in `m.topic` if any exists."
+				},
+				"m.topic": {
+					"type": "object",
+					"title": "Topic Content Block",
+					"properties": {
+						"m.text": {
+							"type": "array",
+							"items": {
+								"type": "object",
+								"title": "Textual Representation",
+								"properties": {
+									"body": {
+										"type": "string",
+										"description": "The string content.\n\nClients SHOULD validate and sanitize the content as they do for rich content associated with `msgtype` of `m.room.message`."
+									},
+									"mimetype": {
+										"type": "string",
+										"description": "The mimetype. Defaults to `text/plain` if omitted."
+									}
+								},
+								"required": [
+									"body"
+								]
+							},
+							"description": "An ordered array of textual representations in different mimetypes.\n\nSenders SHOULD specify at least one representation and SHOULD always include a plaintext representation.\n\nReceivers SHOULD use the first representation in the array that they understand."
+						}
+					}
+				}
+			},
+			"required": [
+				"topic"
+			],
+			"description": "A topic is a short message detailing what is currently being discussed in the room. It can also be used as a way to display extra information about the room, which may not be suitable for the room name. The room topic can also be set when creating a room using `/createRoom`, either with the `topic` key or by specifying a full event in `initial_state`.\n\nIf the `topic` property is absent, null, or empty then the topic is unset. In other words, an empty `topic` property effectively resets the room to having no topic.\n\nIn order to prevent formatting abuse in room topics, clients SHOULD limit the length of topics during both entry and display, for instance, by capping the number of displayed lines. Additionally, clients SHOULD ignore things like headings and enumerations (or format them as regular text)."
+		}
+	}
+}

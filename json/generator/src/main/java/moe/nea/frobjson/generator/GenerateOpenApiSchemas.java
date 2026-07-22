@@ -19,6 +19,7 @@ public class GenerateOpenApiSchemas {
 			switch (args[i]) {
 				case "-operationPackage" -> ctx.operationPackageName = args[++i];
 				case "-modelPackage" -> ctx.modelPackageName = args[++i];
+				case "-extraTagged" -> TaggedTypes.generate(ctx, JsonUtil.loadJson(Path.of(args[++i])));
 				case "-extendType" -> ExtendedType.generate(ctx, JsonUtil.loadJson(Path.of(args[++i])));
 				case "-openApi" -> OpenApiSupport.generateAllSchemasFromOpenApi(ctx, JsonUtil.loadJson(Path.of(args[++i])));
 				default -> throw new RuntimeException("Unknown argument: " + args[i]);
