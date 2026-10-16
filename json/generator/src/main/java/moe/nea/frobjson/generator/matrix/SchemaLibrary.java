@@ -23,19 +23,22 @@ public class SchemaLibrary {
 		this.rootPath = rootPath;
 	}
 
-	private Map<Path, SchemaReference> schemaReferences = new HashMap<>();
+	private Map<Path, Lazy<SchemaReference>> schemaReferences = new HashMap<>();
 
 	@SneakyThrows
-	private SchemaReference resolveDefinition0(Path relativePath) {
-		var fileName = rootPath.resolve(relativePath);
-		var rawDefinition = YAMLUtils.MAPPER.readValue(fileName, RawJsonType.class);
-		var packageName = packageName(relativePath);
-		return new SchemaReference(
-			this,
-			rawDefinition,
-			generator.allocateClassName(packageName, Objects.requireNonNull(rawDefinition.getTitle()))
+	private Lazy<SchemaReference> resolveDefinition0(Path relativePath) {
+		return Lazy.of(() -> {
+				var fileName = rootPath.resolve(relativePath);
+				var rawDefinition = ((IndirectJsonSchema.Direct) YAMLUtils.readFile(this, fileName, IndirectJsonSchema.class))
+					.type();
+				var packageName = packageName(relativePath);
+				return new SchemaReference(
+					this,
+					rawDefinition,
+					generator.allocateClassName(packageName, Objects.requireNonNull(rawDefinition.getTitle()))
+				);
+			}
 		);
-
 	}
 
 	@SneakyThrows
@@ -46,7 +49,7 @@ public class SchemaLibrary {
 		var parts = reference.split("#");
 		assert parts.length == 1 : "Nested references not handled yet";
 		var relativePath = rootPath.relativize(relativeTo).resolve(parts[0]);
-		return schemaReferences.computeIfAbsent(relativePath, this::resolveDefinition0);
+		return schemaReferences.computeIfAbsent(relativePath, this::resolveDefinition0).get();
 	}
 
 	private String packageName(Path segments) {

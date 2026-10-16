@@ -1,5 +1,6 @@
 package moe.nea.frobjson.generator.matrix;
 
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 
 import java.nio.file.Path;
@@ -27,5 +28,10 @@ public class ApiGenerator {
 			matrixGenerator.basePackage() + ".api." + type.replace("-", ""),
 			rootFolder
 		);
+	}
+
+	@SneakyThrows
+	public RawOpenApiRoutes generateRoutes(String path) {
+		return YAMLUtils.readFile(schemaLibrary, rootFolder.resolve(path), RawOpenApiRoutes.class);
 	}
 }

@@ -16,5 +16,7 @@ public class MatrixMain {
 			"errors/error.yaml");
 		System.out.println(schema.getClassName());
 		System.out.println(schema.getRawJsonType());
+		var wellKnownRoutes = clientServerApi.generateRoutes("wellknown.yaml");
+		System.out.println(wellKnownRoutes);
 	}
 }
