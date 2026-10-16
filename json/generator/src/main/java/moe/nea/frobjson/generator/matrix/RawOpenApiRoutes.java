@@ -3,6 +3,7 @@ package moe.nea.frobjson.generator.matrix;
 import lombok.Getter;
 import lombok.ToString;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -27,7 +28,7 @@ public class RawOpenApiRoutes {
 		private String summary;
 		private String description;
 		private String operationId;
-		private Map<String, Response> responses;
+		private Map<Integer, Response> responses;
 		private List<String> tags;
 		private Void security;
 	}
@@ -36,7 +37,7 @@ public class RawOpenApiRoutes {
 	@ToString
 	public static class Response {
 		private String description;
-		private Map<String, ResponseContent> content;
+		private Map<String, ResponseContent> content = new HashMap<>();
 	}
 
 	@Getter

@@ -9,23 +9,36 @@ import javax.lang.model.element.Modifier;
 import java.util.Objects;
 
 public class SchemaReferenceGeneration {
-	private final NameCollection subTypes = new NameCollection(NameCollection.NameType.CLASS_NAME, true);
+	NameCollection subTypes;
 	private final SchemaReference reference;
 	TypeSpec.Builder topLevelBuilder;
 
 	public SchemaReferenceGeneration(SchemaReference reference) {
 		this.reference = reference;
-		subTypes.allocateName(reference.getClassName().simpleName());
-		topLevelBuilder = TypeSpec.classBuilder(reference.getClassName());
 	}
 
 
 	public JavaFile generate() {
+		subTypes = new NameCollection(NameCollection.NameType.CLASS_NAME, true);
+		subTypes.allocateName(reference.getClassName().simpleName());
+		topLevelBuilder = TypeSpec.classBuilder(reference.getClassName());
 		generateTypeDefinition(topLevelBuilder, (RawJsonType.ObjectType) reference.getRawJsonType());
 		return JavaFile.builder(reference.getClassName().packageName(), topLevelBuilder.build())
 			.build();
 	}
 
+	public TypeSpec generateNested(
+		NameCollection nameCollection,
+		TypeSpec.Builder topLevelBuilder
+	) {
+		this.subTypes = nameCollection;
+		this.subTypes.allocateName(reference.getClassName().simpleName());
+		this.topLevelBuilder = topLevelBuilder;
+		var ourBuilder = TypeSpec.classBuilder(reference.getClassName())
+			.addModifiers(Modifier.STATIC);
+		generateTypeDefinition(ourBuilder, (RawJsonType.ObjectType) reference.getRawJsonType());
+		return ourBuilder.build();
+	}
 
 	private TypeName getType(MemberType type) {
 		switch (type) {

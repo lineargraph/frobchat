@@ -23,7 +23,6 @@ public class RoutesGenerator {
 		this.generator = generator;
 		this.routes = routes;
 		this.packageName = packageName;
-
 	}
 
 	public List<JavaFile> generate() {
@@ -34,7 +33,11 @@ public class RoutesGenerator {
 			for (var routeEntry : methods.entrySet()) {
 				var method = routeEntry.getKey();
 				var route = routeEntry.getValue();
-				files.add(generateRoute(path, method, route));
+				try {
+					files.add(generateRoute(path, method, route));
+				} catch (Exception e) {
+					throw new RuntimeException("While generating operation " + route.getOperationId(), e);
+				}
 			}
 		}
 		return files;
@@ -42,21 +45,6 @@ public class RoutesGenerator {
 
 	private JavaFile generateRoute(String path, String method, RawOpenApiRoutes.Route route) {
 		var className = matrixGenerator().allocateClassName(packageName, route.getOperationId());
-		var typeSpec = TypeSpec.classBuilder(className)
-			.addModifiers(Modifier.PUBLIC, Modifier.FINAL)
-			.superclass(Route.class);
-		typeSpec.addMethod(MethodSpec.methodBuilder("method")
-			.addModifiers(Modifier.PUBLIC)
-			.addAnnotation(Override.class)
-			.returns(Route.Method.class)
-			.addStatement("return $T.$L", Route.Method.class, method.toUpperCase(Locale.ROOT))
-			.build());
-		typeSpec.addMethod(MethodSpec.methodBuilder("rawPath")
-			.addModifiers(Modifier.PUBLIC)
-			.addAnnotation(Override.class)
-			.returns(String.class)
-			.addStatement("return $S", path)
-			.build());
-		return JavaFile.builder(packageName, typeSpec.build()).build();
+		return new RouteGenerator(generator, path, method, route, className).generate();
 	}
 }
