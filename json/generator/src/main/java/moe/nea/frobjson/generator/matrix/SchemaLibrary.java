@@ -29,7 +29,7 @@ public class SchemaLibrary {
 	private Lazy<SchemaReference> resolveDefinition0(Path relativePath) {
 		return Lazy.of(() -> {
 				var fileName = rootPath.resolve(relativePath);
-				var rawDefinition = ((MemberType.InlineDefinition) YAMLUtils.readFile(this, fileName, MemberType.class))
+				var rawDefinition = ((MemberType.DirectDeclaration) YAMLUtils.readFile(this, fileName, MemberType.class))
 					.type();
 				var packageName = packageName(relativePath);
 				return new SchemaReference(
@@ -65,6 +65,8 @@ public class SchemaLibrary {
 			var segmentName = segment.toString();
 			if (segmentName.endsWith(".yaml"))
 				segmentName = segmentName.substring(0, segmentName.length() - 5);
+			segmentName = segmentName.replace("_", "");
+			segmentName = segmentName.replace("-", "");
 			packageName.append(".").append(segmentName);
 		}
 		return packageName.toString();

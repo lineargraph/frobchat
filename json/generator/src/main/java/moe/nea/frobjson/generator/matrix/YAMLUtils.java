@@ -1,23 +1,24 @@
 package moe.nea.frobjson.generator.matrix;
 
-import tools.jackson.core.JacksonException;
-import tools.jackson.core.JsonParser;
 import tools.jackson.core.Version;
-import tools.jackson.databind.*;
-import tools.jackson.databind.module.SimpleDeserializers;
-import tools.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.JacksonModule;
+import tools.jackson.databind.ObjectMapper;
 import tools.jackson.dataformat.yaml.YAMLMapper;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.function.Supplier;
 
 public class YAMLUtils {
-	record FolderContext(
+	public static FolderContext getContext() {
+		return Objects.requireNonNull(CURRENT_FOLDER.get());
+	}
+
+	public record FolderContext(
 		Path folder,
 		SchemaLibrary library,
 		List<Unlazyable> unlazyables
@@ -56,27 +57,7 @@ public class YAMLUtils {
 
 			@Override
 			public void setupModule(SetupContext context) {
-				context.addDeserializers(new SimpleDeserializers(
-					Map.of(MemberType.class, new ValueDeserializer<MemberType>() {
-						@Override
-						public MemberType deserialize(JsonParser p, DeserializationContext ctxt) throws JacksonException {
-							ObjectNode tree = p.readValueAsTree();
-							if (tree.has("$ref")) {
-								var context = Objects.requireNonNull(CURRENT_FOLDER.get());
-								var reference = new MemberType.Reference(
-									context.library(),
-									context.folder(),
-									tree.get("$ref").asString()
-								);
-								context.unlazyables().add(reference);
-								return reference;
-							}
-							if (!tree.has("type"))
-								tree.put("type", "unknown");
-							return new MemberType.InlineDefinition(ctxt.readTreeAsValue(tree, RawJsonType.class));
-						}
-					})
-				));
+				context.addDeserializers(MemberType.DESERIALIZERS);
 			}
 		})
 		.build();

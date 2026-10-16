@@ -5,7 +5,6 @@ import com.palantir.javapoet.JavaFile;
 import lombok.SneakyThrows;
 import moe.nea.frobjson.generator.NameCollection;
 
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
@@ -54,9 +53,6 @@ public class MatrixGenerator {
 
 	@SneakyThrows
 	public void writeType(JavaFile javaFile) {
-//		var javaFileLocation = destinationFolder.resolve(javaFile.packageName().replace(".", "/") + ".java");
-//		var packageFolder = javaFileLocation.getParent();
-//		Files.createDirectories(packageFolder);
 		javaFile.writeTo(destinationFolder);
 	}
 }

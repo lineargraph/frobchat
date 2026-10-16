@@ -1,7 +1,6 @@
 package moe.nea.frobchat.util.matrix
 
 import java.util.concurrent.CompletableFuture
-import moe.nea.frobchat.matrixapi.MatrixAuthentication
 import moe.nea.frobchat.matrixapi.operations.Client
 import kotlinx.coroutines.future.await
 

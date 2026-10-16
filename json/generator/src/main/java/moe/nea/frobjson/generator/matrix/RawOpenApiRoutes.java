@@ -13,6 +13,13 @@ public class RawOpenApiRoutes {
 	private Info info;
 	private Map<String, Map<String, Route>> paths;
 	private Void servers;
+	private Components components;
+
+	@Getter
+	@ToString
+	public static class Components {
+		private Void securitySchemes;
+	}
 
 	@Getter
 	@ToString
@@ -22,6 +29,7 @@ public class RawOpenApiRoutes {
 		private String operationId;
 		private Map<String, Response> responses;
 		private List<String> tags;
+		private Void security;
 	}
 
 	@Getter
@@ -35,6 +43,7 @@ public class RawOpenApiRoutes {
 	@ToString
 	public static class ResponseContent {
 		private MemberType schema;
+		private Void examples;
 	}
 
 	@Getter

@@ -3,11 +3,9 @@ package moe.nea.frobjson.generator.matrix;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.palantir.javapoet.*;
 import moe.nea.frobjson.generator.NameCollection;
-import moe.nea.frobjson.generator.TypeUtils;
 import tools.jackson.databind.JsonNode;
 
 import javax.lang.model.element.Modifier;
-import java.util.Map;
 import java.util.Objects;
 
 public class SchemaReferenceGeneration {
@@ -48,13 +46,28 @@ public class SchemaReferenceGeneration {
 					case RawJsonType.UnknownType unknownType -> {
 						return ClassName.get(JsonNode.class);
 					}
+					case RawJsonType.BooleanType booleanType -> {
+						return TypeName.BOOLEAN;
+					}
+					case RawJsonType.IntegerType integerType -> {
+						return TypeName.INT; // TODO: perhaps long?
+					}
 				}
 			}
 			case MemberType.Reference reference -> {
 				var schemaRef = reference.schemaReference();
 				return schemaRef.getClassName();
 			}
+			case MemberType.MergeDefinition mergeDefinition -> {
+				return getType(new MemberType.InlineDefinition(mergeDefinition.type()));
+			}
 		}
+	}
+
+	private String guessFieldName(String name, MemberType memberType) {
+		if (name.startsWith("m."))
+			name = name.substring(2);
+		return name;
 	}
 
 	private void generateTypeDefinition(TypeSpec.Builder typeSpec, RawJsonType.ObjectType type) {
@@ -64,7 +77,7 @@ public class SchemaReferenceGeneration {
 			var key = entry.getKey();
 			var value = entry.getValue();
 			var fieldType = getType(value);
-			var fieldName = nameCollection.allocateName(key);
+			var fieldName = nameCollection.allocateName(guessFieldName(key, value));
 			var fieldSpec = (FieldSpec.builder(fieldType, fieldName, Modifier.PRIVATE));
 			var jsonPropertySpec = AnnotationSpec.builder(JsonProperty.class);
 			if (!fieldName.equals(key)) {

@@ -8,6 +8,7 @@ java.toolchain.languageVersion.set(JavaLanguageVersion.of(21))
 dependencies {
 	api(libs.jspecify)
 	api(libs.jbAnnotations)
+	api(libs.jackson.dataformat.yaml)
 	api(libs.gson)
 	api(libs.slf4j.api)
 }

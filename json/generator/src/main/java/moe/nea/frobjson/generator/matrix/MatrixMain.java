@@ -8,16 +8,8 @@ public class MatrixMain {
 		var destinationFolder = Path.of(System.getProperty("matrixApi.destinationFolder", "test-output"));
 		var matrixGenerator = new MatrixGenerator(matrixSpecRoot, destinationFolder);
 		var clientServerApi = matrixGenerator.apiGenerator("client-server");
-		var schema = clientServerApi.schemaLibrary().resolveDefinition(
-			clientServerApi.rootFolder(),
-			"definitions/errors/error.yaml");
-		clientServerApi.schemaLibrary().resolveDefinition(
-			clientServerApi.rootFolder().resolve("definitions"),
-			"errors/error.yaml");
-		System.out.println(schema.getClassName());
-		System.out.println(schema.getRawJsonType());
-		var wellKnownRoutes = clientServerApi.generateRoutes("wellknown.yaml");
-		System.out.println(wellKnownRoutes);
+		clientServerApi.generateRoutes("wellknown.yaml");
+		clientServerApi.generateRoutes("whoami.yaml");
 		clientServerApi.schemaLibrary().writeFiles();
 	}
 }

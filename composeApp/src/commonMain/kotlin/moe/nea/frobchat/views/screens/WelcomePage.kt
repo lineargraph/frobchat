@@ -33,7 +33,6 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import moe.nea.frobchat.build.BuildConfig
 import moe.nea.frobchat.config.findPreference
 import moe.nea.frobchat.layouts.CenterColumn
-import moe.nea.frobchat.matrixapi.MatrixAuthentication
 import moe.nea.frobchat.matrixapi.models.Login2
 import moe.nea.frobchat.matrixapi.models.UserIdentifier
 import moe.nea.frobchat.matrixapi.operations.Login
