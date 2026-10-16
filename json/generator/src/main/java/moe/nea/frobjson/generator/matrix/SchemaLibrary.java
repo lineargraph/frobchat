@@ -1,0 +1,62 @@
+package moe.nea.frobjson.generator.matrix;
+
+import lombok.SneakyThrows;
+
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
+
+public class SchemaLibrary {
+	private final MatrixGenerator generator;
+	private final String rootPackage;
+	private final Path rootPath;
+
+	public SchemaLibrary(
+		MatrixGenerator generator,
+		String rootPackage,
+		Path rootPath
+	) {
+		this.generator = generator;
+		this.rootPackage = rootPackage;
+		this.rootPath = rootPath;
+	}
+
+	private Map<Path, SchemaReference> schemaReferences = new HashMap<>();
+
+	@SneakyThrows
+	private SchemaReference resolveDefinition0(Path relativePath) {
+		var fileName = rootPath.resolve(relativePath);
+		var rawDefinition = YAMLUtils.MAPPER.readValue(fileName, RawJsonType.class);
+		var packageName = packageName(relativePath);
+		return new SchemaReference(
+			this,
+			rawDefinition,
+			generator.allocateClassName(packageName, Objects.requireNonNull(rawDefinition.getTitle()))
+		);
+
+	}
+
+	@SneakyThrows
+	public SchemaReference resolveDefinition(
+		Path relativeTo,
+		String reference) {
+		assert Files.isDirectory(relativeTo) : "Relative root should be the folder containing the file";
+		var parts = reference.split("#");
+		assert parts.length == 1 : "Nested references not handled yet";
+		var relativePath = rootPath.relativize(relativeTo).resolve(parts[0]);
+		return schemaReferences.computeIfAbsent(relativePath, this::resolveDefinition0);
+	}
+
+	private String packageName(Path segments) {
+		var packageName = new StringBuilder(rootPackage);
+		for (Path segment : segments) {
+			var segmentName = segment.toString();
+			if (segmentName.endsWith(".yaml"))
+				segmentName = segmentName.substring(0, segmentName.length() - 5);
+			packageName.append(".").append(segmentName);
+		}
+		return packageName.toString();
+	}
+}

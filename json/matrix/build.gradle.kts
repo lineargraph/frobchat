@@ -6,6 +6,21 @@ dependencies {
 }
 
 java.toolchain.languageVersion.set(JavaLanguageVersion.of(21))
+
+val matrixSpecRoot = rootProject.file("matrix-spec")
+
+val generateMatrixApi = tasks.register("generateMatrixApi", JavaExec::class) {
+	val destinationFolder = layout.buildDirectory.dir("generated/sources/matrixApi")
+
+	this.inputs.dir(matrixSpecRoot)
+	this.outputs.dir(destinationFolder)
+
+	this.classpath(configurations.detachedConfiguration(projects.json.generator))
+	this.mainClass = "moe.nea.frobjson.generator.matrix.MatrixMain"
+	this.systemProperty("matrixApi.matrixSpecRoot", matrixSpecRoot)
+	this.systemProperty("matrixApi.destinationFolder", destinationFolder.get().asFile.absolutePath)
+}
+
 val generateJsonSources = tasks.register("generateJsonSources", JavaExec::class) {
 	this.classpath(configurations.detachedConfiguration(projects.json.generator))
 	this.mainClass = "moe.nea.frobjson.generator.GenerateOpenApiSchemas"

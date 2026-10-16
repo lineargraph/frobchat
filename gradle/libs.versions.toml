@@ -33,10 +33,12 @@ javapoet = "0.16.0"
 gson = "2.14.0"
 [libraries]
 jbAnnotations = { module = "org.jetbrains:annotations", version = "26.1.0" }
+lombok = { module = "org.projectlombok:lombok", version = "1.18.48" }
 guava = { module = "com.google.guava:guava", version = "33.6.0-jre" }
 jspecify = { module = "org.jspecify:jspecify", version = "1.0.0" }
 javapoet = { module = "com.palantir.javapoet:javapoet", version.ref = "javapoet" }
 gson = { module = "com.google.code.gson:gson", version.ref = "gson" }
+jackson-dataformat-yaml = { module = "tools.jackson.dataformat:jackson-dataformat-yaml", version = "3.0.0-rc4" }
 androidx-navigation-compose = { module = "org.jetbrains.androidx.navigation:navigation-compose", version.ref = "androidNavigation" }
 androidx-navigation-features-fragment = { module = "androidx.navigation:navigation-dynamic-features-fragment", version.ref = "androidNavigation" }
 androidx-navigation-ui = { module = "androidx.navigation:navigation-ui", version.ref = "androidNavigation" }
@@ -62,7 +64,7 @@ androidx-lifecycle-runtimeCompose = { module = "org.jetbrains.androidx.lifecycle
 androidx-sqlite-bundled = { module = "androidx.sqlite:sqlite-bundled", version.ref = "androidx-sqlite" }
 kotlinx-coroutinesSwing = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-swing", version.ref = "kotlinx-coroutines" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "serialization-json" }
-slf4j-api = { module = "org.slf4j:slf4j-api",  version.ref = "slf4j" }
+slf4j-api = { module = "org.slf4j:slf4j-api", version.ref = "slf4j" }
 slf4j-simple = { module = "org.slf4j:slf4j-simple", version.ref = "slf4j" }
 vlcj = { module = "uk.co.caprica:vlcj", version.ref = "vlcj" }
 voyager-navigator = { module = "cafe.adriel.voyager:voyager-navigator", version.ref = "voyager" }

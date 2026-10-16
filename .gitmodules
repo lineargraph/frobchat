@@ -1,0 +1,4 @@
+[submodule "matrix-spec"]
+	path = matrix-spec
+	url = https://github.com/matrix-org/matrix-spec/
+	branch = release/v1.19
