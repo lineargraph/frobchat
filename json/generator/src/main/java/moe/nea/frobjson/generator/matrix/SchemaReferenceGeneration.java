@@ -86,6 +86,14 @@ public class SchemaReferenceGeneration {
 	private void generateTypeDefinition(TypeSpec.Builder typeSpec, RawJsonType.ObjectType type) {
 		typeSpec.addModifiers(Modifier.PUBLIC, Modifier.FINAL);
 		var nameCollection = new NameCollection(NameCollection.NameType.FIELD_NAME, true);
+		var constructor = MethodSpec.constructorBuilder()
+			.addModifiers(Modifier.PUBLIC);
+		var requiredConstructor = MethodSpec.constructorBuilder()
+			.addModifiers(Modifier.PUBLIC);
+		var toString = CodeBlock.builder()
+			.add("$S", type.getTitle() + " [");
+		boolean isFirstProperty = true;
+		boolean anyNonRequired = false;
 		for (var entry : type.getProperties().entrySet()) {
 			var key = entry.getKey();
 			var value = entry.getValue();
@@ -98,7 +106,18 @@ public class SchemaReferenceGeneration {
 			}
 			if (type.getRequired().contains(key)) {
 				jsonPropertySpec.addMember("required", "true");
+				requiredConstructor.addParameter(fieldType, fieldName)
+					.addStatement("this.$L = $L", fieldName, fieldName);
+			} else {
+				anyNonRequired = true;
 			}
+			if (isFirstProperty) {
+				toString.add(" + $S + this.$L", " " + key + " = ", fieldName);
+			} else {
+				toString.add(" + $S + this.$L", ", " + key + " = ", fieldName);
+			}
+			constructor.addParameter(fieldType, fieldName)
+				.addStatement("this.$L = $L", fieldName, fieldName);
 			fieldSpec.addAnnotation(jsonPropertySpec.build());
 			typeSpec.addField(fieldSpec.build());
 			typeSpec.addMethod(MethodSpec.methodBuilder(fieldName)
@@ -106,7 +125,21 @@ public class SchemaReferenceGeneration {
 				.returns(fieldType)
 				.addStatement("return this.$L", fieldName)
 				.build());
+			isFirstProperty = false;
 		}
+		toString.add("+ $S", " ]");
+		if (anyNonRequired)
+			typeSpec.addMethod(requiredConstructor.build());
+		typeSpec.addMethod(constructor.build())
+			.addMethod(MethodSpec.constructorBuilder().build())
+			.addMethod(MethodSpec.methodBuilder("toString")
+				.addAnnotation(Override.class)
+				.returns(String.class)
+				.addModifiers(Modifier.PUBLIC)
+				.addStatement("return $L", toString.build())
+				.build())
+		;
+
 	}
 
 }

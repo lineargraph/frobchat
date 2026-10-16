@@ -1,9 +1,11 @@
+import moe.nea.frobmatrix.api.wellknown.GetWellknown;
+
 import java.net.http.HttpClient;
 
 public class Main {
 	public static void main(String[] args) {
 		var httpClient = HttpClient.newHttpClient();
-
+		System.out.println(new GetWellknown().execute(httpClient).body());
 //		var client = MatrixClient.client(
 //			httpClient,
 //			MatrixAuthentication.anon("https://nea.moe")

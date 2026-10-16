@@ -9,6 +9,7 @@ import javax.lang.model.element.Modifier;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 
 public class RoutesGenerator {
 	final ApiGenerator generator;
@@ -27,6 +28,7 @@ public class RoutesGenerator {
 
 	public List<JavaFile> generate() {
 		List<JavaFile> files = new ArrayList<>();
+		var basePath = routes.guessBasePath();
 		for (var pathEntry : routes.getPaths().entrySet()) {
 			var path = pathEntry.getKey();
 			var methods = pathEntry.getValue();
@@ -34,7 +36,7 @@ public class RoutesGenerator {
 				var method = routeEntry.getKey();
 				var route = routeEntry.getValue();
 				try {
-					files.add(generateRoute(path, method, route));
+					files.add(generateRoute(basePath + path, method, route));
 				} catch (Exception e) {
 					throw new RuntimeException("While generating operation " + route.getOperationId(), e);
 				}

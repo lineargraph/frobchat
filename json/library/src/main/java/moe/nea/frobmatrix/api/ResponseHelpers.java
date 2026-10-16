@@ -56,7 +56,7 @@ public class ResponseHelpers {
 		HttpResponse.ResponseInfo responseInfo
 	) {
 		return HttpResponse.BodySubscribers.mapping(HttpResponse.BodySubscribers.ofString(getCharset(responseInfo)), it -> {
-			throw new RuntimeException("Unknown response: " + it);
+			throw new RuntimeException("Unknown response (" + responseInfo.statusCode() + "): " + it);
 		});
 	}
 

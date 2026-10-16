@@ -2,6 +2,7 @@ package moe.nea.frobjson.generator.matrix;
 
 import com.palantir.javapoet.*;
 import moe.nea.frobjson.generator.NameCollection;
+import moe.nea.frobjson.generator.TypeUtils;
 import moe.nea.frobmatrix.api.ResponseHelpers;
 import moe.nea.frobmatrix.api.Route;
 
@@ -9,6 +10,7 @@ import javax.lang.model.element.Modifier;
 import java.net.http.HttpResponse;
 import java.util.Locale;
 import java.util.Map;
+import java.util.stream.Stream;
 
 public class RouteGenerator {
 	private final ApiGenerator generator;
@@ -30,8 +32,7 @@ public class RouteGenerator {
 		this.route = route;
 		this.className = className;
 		this.typeSpec = TypeSpec.classBuilder(className)
-			.addModifiers(Modifier.PUBLIC, Modifier.FINAL)
-			.superclass(Route.class);
+			.addModifiers(Modifier.PUBLIC, Modifier.FINAL);
 	}
 
 	public JavaFile generate() {
@@ -47,8 +48,10 @@ public class RouteGenerator {
 			.returns(String.class)
 			.addStatement("return $S", path)
 			.build());
-		this.responseParser = MethodSpec.methodBuilder("parseResponse")
+		this.responseParser = MethodSpec.methodBuilder("handleResponseInfo")
 			.addModifiers(Modifier.PUBLIC)
+			.addAnnotation(TypeUtils.buildSuppressWarnings(Stream.of("RedundantSuppression", "SwitchStatementWithTooFewBranches", "EnhancedSwitchMigration", "DuplicateBranchesInSwitch")))
+			.addAnnotation(Override.class)
 			.addParameter(HttpResponse.ResponseInfo.class, "responseInfo")
 			.beginControlFlow("switch (responseInfo.statusCode())");
 
@@ -86,6 +89,7 @@ public class RouteGenerator {
 				case MemberType.Reference reference -> reference.schemaReference().getClassName();
 			};
 			if (!isError) {
+				this.typeSpec.superclass(ParameterizedTypeName.get(ClassName.get(Route.class), resultType));
 				this.responseParser
 					.returns(ParameterizedTypeName.get(ClassName.get(HttpResponse.BodySubscriber.class), resultType))
 					.addStatement("case $L: return $T.parseJson(responseInfo, $T.class)", statusCode, ResponseHelpers.class, resultType);
