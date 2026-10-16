@@ -8,10 +8,10 @@ import lombok.ToString;
 import org.jspecify.annotations.Nullable;
 import tools.jackson.databind.JsonNode;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 @Getter
 @Setter
@@ -46,8 +46,8 @@ public sealed abstract class RawJsonType {
 	@ToString(callSuper = true)
 	@Getter
 	public static final class ObjectType extends RawJsonType {
-		private Map<String, IndirectJsonSchema> properties = new HashMap<>();
-		private @Nullable IndirectJsonSchema additionalProperties = null;
-		private List<String> required = new ArrayList<>();
+		private Map<String, MemberType> properties = new HashMap<>();
+		private @Nullable MemberType additionalProperties = null;
+		private Set<String> required = new HashSet<>();
 	}
 }

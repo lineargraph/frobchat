@@ -57,13 +57,13 @@ public class YAMLUtils {
 			@Override
 			public void setupModule(SetupContext context) {
 				context.addDeserializers(new SimpleDeserializers(
-					Map.of(IndirectJsonSchema.class, new ValueDeserializer<IndirectJsonSchema>() {
+					Map.of(MemberType.class, new ValueDeserializer<MemberType>() {
 						@Override
-						public IndirectJsonSchema deserialize(JsonParser p, DeserializationContext ctxt) throws JacksonException {
+						public MemberType deserialize(JsonParser p, DeserializationContext ctxt) throws JacksonException {
 							ObjectNode tree = p.readValueAsTree();
 							if (tree.has("$ref")) {
 								var context = Objects.requireNonNull(CURRENT_FOLDER.get());
-								var reference = new IndirectJsonSchema.Reference(
+								var reference = new MemberType.Reference(
 									context.library(),
 									context.folder(),
 									tree.get("$ref").asString()
@@ -73,7 +73,7 @@ public class YAMLUtils {
 							}
 							if (!tree.has("type"))
 								tree.put("type", "unknown");
-							return new IndirectJsonSchema.Direct(ctxt.readTreeAsValue(tree, RawJsonType.class));
+							return new MemberType.InlineDefinition(ctxt.readTreeAsValue(tree, RawJsonType.class));
 						}
 					})
 				));

@@ -34,7 +34,7 @@ public class RawOpenApiRoutes {
 	@Getter
 	@ToString
 	public static class ResponseContent {
-		private IndirectJsonSchema schema;
+		private MemberType schema;
 	}
 
 	@Getter

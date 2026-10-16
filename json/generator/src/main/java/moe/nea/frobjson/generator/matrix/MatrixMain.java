@@ -18,5 +18,6 @@ public class MatrixMain {
 		System.out.println(schema.getRawJsonType());
 		var wellKnownRoutes = clientServerApi.generateRoutes("wellknown.yaml");
 		System.out.println(wellKnownRoutes);
+		clientServerApi.schemaLibrary().writeFiles();
 	}
 }

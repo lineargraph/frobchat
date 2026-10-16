@@ -1,8 +1,11 @@
 package moe.nea.frobjson.generator.matrix;
 
 import com.palantir.javapoet.ClassName;
+import com.palantir.javapoet.JavaFile;
+import lombok.SneakyThrows;
 import moe.nea.frobjson.generator.NameCollection;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
@@ -47,5 +50,13 @@ public class MatrixGenerator {
 
 	public ClassName allocateClassName(String packageName, String title) {
 		return ClassName.get(packageName, classNamesForPackage(packageName).allocateName(title));
+	}
+
+	@SneakyThrows
+	public void writeType(JavaFile javaFile) {
+//		var javaFileLocation = destinationFolder.resolve(javaFile.packageName().replace(".", "/") + ".java");
+//		var packageFolder = javaFileLocation.getParent();
+//		Files.createDirectories(packageFolder);
+		javaFile.writeTo(destinationFolder);
 	}
 }

@@ -29,7 +29,7 @@ public class SchemaLibrary {
 	private Lazy<SchemaReference> resolveDefinition0(Path relativePath) {
 		return Lazy.of(() -> {
 				var fileName = rootPath.resolve(relativePath);
-				var rawDefinition = ((IndirectJsonSchema.Direct) YAMLUtils.readFile(this, fileName, IndirectJsonSchema.class))
+				var rawDefinition = ((MemberType.InlineDefinition) YAMLUtils.readFile(this, fileName, MemberType.class))
 					.type();
 				var packageName = packageName(relativePath);
 				return new SchemaReference(
@@ -39,6 +39,13 @@ public class SchemaLibrary {
 				);
 			}
 		);
+	}
+
+	public void writeFiles() {
+		for (Lazy<SchemaReference> value : schemaReferences.values()) {
+			var schemaReference = value.get();
+			generator.writeType(schemaReference.generateDefinition());
+		}
 	}
 
 	@SneakyThrows

@@ -5,9 +5,9 @@ import org.jspecify.annotations.NonNull;
 
 import java.nio.file.Path;
 
-public sealed interface IndirectJsonSchema {
+public sealed interface MemberType {
 
-	record Direct(RawJsonType type) implements IndirectJsonSchema {
+	record InlineDefinition(RawJsonType type) implements MemberType {
 		@Override
 		public @NonNull String toString() {
 			return type.toString();
@@ -15,11 +15,15 @@ public sealed interface IndirectJsonSchema {
 	}
 
 	@RequiredArgsConstructor
-	final class Reference implements IndirectJsonSchema, Unlazyable {
-		final SchemaLibrary schemaLibrary;
-		final Path relativeTo;
-		final String reference;
-		SchemaReference schemaReference = null;
+	final class Reference implements MemberType, Unlazyable {
+		private final SchemaLibrary schemaLibrary;
+		private final Path relativeTo;
+		private final String reference;
+		private SchemaReference schemaReference = null;
+
+		public SchemaReference schemaReference() {
+			return schemaReference;
+		}
 
 		@Override
 		public void unlazy() {
