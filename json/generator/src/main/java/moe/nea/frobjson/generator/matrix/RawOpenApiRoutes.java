@@ -1,8 +1,10 @@
 package moe.nea.frobjson.generator.matrix;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
 import lombok.ToString;
+import org.jspecify.annotations.Nullable;
 
 import java.util.HashMap;
 import java.util.List;
@@ -62,6 +64,42 @@ public class RawOpenApiRoutes {
 		private Map<Integer, Response> responses;
 		private List<String> tags;
 		private Void security;
+		@JsonProperty("x-addedInMatrixVersion")
+		private String addedInMatrixVersion;
+		private List<Parameter> parameters = List.of();
+		private @Nullable RequestBody requestBody;
+	}
+
+	@Getter
+	@ToString
+	public static class RequestBody {
+		private String description;
+		private boolean required;
+		private Map<String, RequestBodyContent> content;
+	}
+
+	@Getter
+	@ToString
+	public static class RequestBodyContent {
+		private MemberType schema;
+		private Void example;
+		private Void examples;
+	}
+
+	@Getter
+	@ToString
+	public static class Parameter {
+		private ParameterLocation in;
+		private String name;
+		private String description;
+		private boolean required;
+		private Void example;
+		private MemberType schema;
+	}
+
+	public enum ParameterLocation {
+		@JsonAlias("path") PATH,
+		@JsonAlias("query") QUERY,
 	}
 
 	@Getter

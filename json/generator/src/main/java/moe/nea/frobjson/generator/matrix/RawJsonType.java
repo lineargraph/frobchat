@@ -7,10 +7,7 @@ import lombok.*;
 import org.jspecify.annotations.Nullable;
 import tools.jackson.databind.JsonNode;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 @Getter
 @Setter
@@ -25,6 +22,7 @@ import java.util.Set;
 	@JsonSubTypes.Type(value = RawJsonType.BooleanType.class, name = "boolean"),
 	@JsonSubTypes.Type(value = RawJsonType.ObjectType.class, name = "object"),
 	@JsonSubTypes.Type(value = RawJsonType.IntegerType.class, name = "integer"),
+	@JsonSubTypes.Type(value = RawJsonType.ArrayType.class, name = "array"),
 	@JsonSubTypes.Type(value = RawJsonType.UnknownType.class, name = "unknown")
 })
 @NoArgsConstructor
@@ -44,20 +42,30 @@ public sealed abstract class RawJsonType {
 
 	@ToString(callSuper = true)
 	@Getter
+	public static final class ArrayType extends RawJsonType {
+		private MemberType items;
+	}
+
+	@ToString(callSuper = true)
+	@Getter
 	public static final class BooleanType extends RawJsonType {
 	}
 
 	@ToString(callSuper = true)
 	@Getter
 	public static final class IntegerType extends RawJsonType {
+		private String format; // Could be int64 sometimes
 	}
 
 	@ToString(callSuper = true)
 	@Getter
-	@AllArgsConstructor@NoArgsConstructor
+	@AllArgsConstructor
+	@NoArgsConstructor
 	public static final class StringType extends RawJsonType {
 		private @Nullable String format;
 		private @Nullable String pattern;
+		@JsonProperty("enum")
+		private @Nullable List<String> validValues = null;
 	}
 
 	@ToString(callSuper = true)

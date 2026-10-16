@@ -14,7 +14,7 @@ public abstract class Route<T> {
 	public abstract String rawPath();
 
 	public enum Method {
-		GET, POST
+		GET, POST, PUT
 	}
 
 	public HttpResponse<T> execute(HttpClient client) {

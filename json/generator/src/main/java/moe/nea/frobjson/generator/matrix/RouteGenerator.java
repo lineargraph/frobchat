@@ -83,7 +83,7 @@ public class RouteGenerator {
 						directDeclaration.type(),
 						className.nestedClass(isError ? "Response" + statusCode : "Response")
 					);
-					typeSpec.addType(new SchemaReferenceGeneration(reference).generateNested(subTypes, typeSpec));
+					typeSpec.addType(new SchemaReferenceGeneration(reference).generateNested(subTypes, className, typeSpec));
 					yield reference.getClassName();
 				}
 				case MemberType.Reference reference -> reference.schemaReference().getClassName();

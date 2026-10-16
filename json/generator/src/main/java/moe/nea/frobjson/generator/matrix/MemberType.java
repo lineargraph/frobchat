@@ -164,7 +164,8 @@ public sealed interface MemberType {
 				mergeAll(RawJsonType.StringType.class, (base, spec) ->
 					mergeCommon(new RawJsonType.StringType(
 						mergeNulls(base.getFormat(), spec.getFormat()),
-						mergeNulls(base.getPattern(), spec.getPattern())
+						mergeNulls(base.getPattern(), spec.getPattern()),
+						mergeNulls(base.getValidValues(), spec.getValidValues()) // TODO: technically this would be an intersection?
 					), base, spec));
 
 			else throw new RuntimeException("Cannot merge " + p);

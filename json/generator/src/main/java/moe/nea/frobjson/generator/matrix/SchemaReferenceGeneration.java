@@ -6,12 +6,14 @@ import moe.nea.frobjson.generator.NameCollection;
 import tools.jackson.databind.JsonNode;
 
 import javax.lang.model.element.Modifier;
+import java.util.List;
 import java.util.Objects;
 
 public class SchemaReferenceGeneration {
 	NameCollection subTypes;
 	private final SchemaReference reference;
 	TypeSpec.Builder topLevelBuilder;
+	ClassName containingClassName;
 
 	public SchemaReferenceGeneration(SchemaReference reference) {
 		this.reference = reference;
@@ -21,6 +23,7 @@ public class SchemaReferenceGeneration {
 	public JavaFile generate() {
 		subTypes = new NameCollection(NameCollection.NameType.CLASS_NAME, true);
 		subTypes.allocateName(reference.getClassName().simpleName());
+		containingClassName = reference.getClassName();
 		topLevelBuilder = TypeSpec.classBuilder(reference.getClassName());
 		generateTypeDefinition(topLevelBuilder, (RawJsonType.ObjectType) reference.getRawJsonType());
 		return JavaFile.builder(reference.getClassName().packageName(), topLevelBuilder.build())
@@ -29,24 +32,27 @@ public class SchemaReferenceGeneration {
 
 	public TypeSpec generateNested(
 		NameCollection nameCollection,
+		ClassName containingClassName,
 		TypeSpec.Builder topLevelBuilder
 	) {
 		this.subTypes = nameCollection;
 		this.subTypes.allocateName(reference.getClassName().simpleName());
 		this.topLevelBuilder = topLevelBuilder;
+		this.containingClassName = containingClassName;
 		var ourBuilder = TypeSpec.classBuilder(reference.getClassName())
 			.addModifiers(Modifier.STATIC);
 		generateTypeDefinition(ourBuilder, (RawJsonType.ObjectType) reference.getRawJsonType());
 		return ourBuilder.build();
 	}
 
-	private TypeName getType(MemberType type) {
+	private TypeName getType(String fieldName, MemberType type) {
 		switch (type) {
 			case MemberType.InlineDefinition(RawJsonType innerType) -> {
 				switch (innerType) {
 					case RawJsonType.ObjectType objectType -> {
-						var simpleName = subTypes.allocateName(Objects.requireNonNull(objectType.getTitle()));
-						var className = reference.getClassName().nestedClass(simpleName);
+						var title = objectType.getTitle();
+						var simpleName = subTypes.allocateName(title != null ? title : fieldName);
+						var className = containingClassName.nestedClass(simpleName);
 						var typeSpec = TypeSpec.classBuilder(className)
 							.addModifiers(Modifier.STATIC);
 						generateTypeDefinition(typeSpec, objectType);
@@ -65,6 +71,10 @@ public class SchemaReferenceGeneration {
 					case RawJsonType.IntegerType integerType -> {
 						return TypeName.INT; // TODO: perhaps long?
 					}
+					case RawJsonType.ArrayType arrayType -> {
+						// TODO: bind the title and description and such from outside? unsure
+						return ParameterizedTypeName.get(ClassName.get(List.class), getType(fieldName, arrayType.getItems()));
+					}
 				}
 			}
 			case MemberType.Reference reference -> {
@@ -72,7 +82,7 @@ public class SchemaReferenceGeneration {
 				return schemaRef.getClassName();
 			}
 			case MemberType.MergeDefinition mergeDefinition -> {
-				return getType(new MemberType.InlineDefinition(mergeDefinition.type()));
+				return getType(fieldName, new MemberType.InlineDefinition(mergeDefinition.type()));
 			}
 		}
 	}
@@ -97,8 +107,8 @@ public class SchemaReferenceGeneration {
 		for (var entry : type.getProperties().entrySet()) {
 			var key = entry.getKey();
 			var value = entry.getValue();
-			var fieldType = getType(value);
 			var fieldName = nameCollection.allocateName(guessFieldName(key, value));
+			var fieldType = getType(fieldName, value);
 			var fieldSpec = (FieldSpec.builder(fieldType, fieldName, Modifier.PRIVATE));
 			var jsonPropertySpec = AnnotationSpec.builder(JsonProperty.class);
 			if (!fieldName.equals(key)) {
@@ -130,8 +140,10 @@ public class SchemaReferenceGeneration {
 		toString.add("+ $S", " ]");
 		if (anyNonRequired)
 			typeSpec.addMethod(requiredConstructor.build());
+		if (!requiredConstructor.build().parameters().isEmpty()) {
+			typeSpec.addMethod(MethodSpec.constructorBuilder().build());
+		}
 		typeSpec.addMethod(constructor.build())
-			.addMethod(MethodSpec.constructorBuilder().build())
 			.addMethod(MethodSpec.methodBuilder("toString")
 				.addAnnotation(Override.class)
 				.returns(String.class)
