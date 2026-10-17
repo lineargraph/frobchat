@@ -1,7 +1,6 @@
 package moe.nea.frobjson.generator.matrix;
 
 import com.palantir.javapoet.*;
-import moe.nea.frobjson.generator.NameCollection;
 import moe.nea.frobjson.generator.TypeUtils;
 import moe.nea.frobmatrix.api.ResponseHelpers;
 import moe.nea.frobmatrix.api.Route;
@@ -27,17 +26,17 @@ public class RouteGenerator extends JavaFileGenerator {
 		this.path = path;
 		this.method = method;
 		this.route = route;
-		this.typeSpec.addModifiers(Modifier.PUBLIC, Modifier.FINAL);
+		this.topLevelSpec.addModifiers(Modifier.PUBLIC, Modifier.FINAL);
 	}
 
 	public JavaFile generate() {
-		typeSpec.addMethod(MethodSpec.methodBuilder("method")
+		topLevelSpec.addMethod(MethodSpec.methodBuilder("method")
 			.addModifiers(Modifier.PUBLIC)
 			.addAnnotation(Override.class)
 			.returns(Route.Method.class)
 			.addStatement("return $T.$L", Route.Method.class, method.toUpperCase(Locale.ROOT))
 			.build());
-		typeSpec.addMethod(MethodSpec.methodBuilder("rawPath")
+		topLevelSpec.addMethod(MethodSpec.methodBuilder("rawPath")
 			.addModifiers(Modifier.PUBLIC)
 			.addAnnotation(Override.class)
 			.returns(String.class)
@@ -56,11 +55,11 @@ public class RouteGenerator extends JavaFileGenerator {
 			generateErrorResponse(statusCode, response);
 		}
 
-		typeSpec.addMethod(this.responseParser
+		topLevelSpec.addMethod(this.responseParser
 			.addStatement("default: return $T.unknownResponseError(responseInfo)", ResponseHelpers.class)
 			.endControlFlow()
 			.build());
-		return JavaFile.builder(topLevelClass.packageName(), typeSpec.build()).build();
+		return JavaFile.builder(topLevelClass.packageName(), topLevelSpec.build()).build();
 	}
 
 
@@ -75,7 +74,7 @@ public class RouteGenerator extends JavaFileGenerator {
 				isError ? "Response" + statusCode : "Response",
 				responseContent.getSchema());
 			if (!isError) {
-				this.typeSpec.superclass(ParameterizedTypeName.get(ClassName.get(Route.class), resultType));
+				this.topLevelSpec.superclass(ParameterizedTypeName.get(ClassName.get(Route.class), resultType));
 				this.responseParser
 					.returns(ParameterizedTypeName.get(ClassName.get(HttpResponse.BodySubscriber.class), resultType))
 					.addStatement("case $L: return $T.parseJson(responseInfo, $T.class)", statusCode, ResponseHelpers.class, resultType);

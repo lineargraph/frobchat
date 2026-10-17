@@ -1,157 +1,19 @@
 package moe.nea.frobjson.generator.matrix;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.palantir.javapoet.*;
-import moe.nea.frobjson.generator.NameCollection;
-import tools.jackson.databind.JsonNode;
+import com.palantir.javapoet.JavaFile;
 
-import javax.lang.model.element.Modifier;
-import java.util.List;
-import java.util.Objects;
-
-public class SchemaReferenceGeneration {
-	NameCollection subTypes;
+public class SchemaReferenceGeneration extends JavaFileGenerator {
 	private final SchemaReference reference;
-	TypeSpec.Builder topLevelBuilder;
-	ClassName containingClassName;
 
 	public SchemaReferenceGeneration(SchemaReference reference) {
+		super(reference.getSchemaLibrary(), reference.getClassName());
 		this.reference = reference;
 	}
 
 
 	public JavaFile generate() {
-		subTypes = new NameCollection(NameCollection.NameType.CLASS_NAME, true);
-		subTypes.allocateName(reference.getClassName().simpleName());
-		containingClassName = reference.getClassName();
-		topLevelBuilder = TypeSpec.classBuilder(reference.getClassName());
-		generateTypeDefinition(topLevelBuilder, (RawJsonType.ObjectType) reference.getRawJsonType());
-		return JavaFile.builder(reference.getClassName().packageName(), topLevelBuilder.build())
+		writeTypeDefinition(topLevelSpec, (RawJsonType.ObjectType) reference.getRawJsonType());
+		return JavaFile.builder(reference.getClassName().packageName(), topLevelSpec.build())
 			.build();
 	}
-
-	public TypeSpec generateNested(
-		NameCollection nameCollection,
-		ClassName containingClassName,
-		TypeSpec.Builder topLevelBuilder
-	) {
-		this.subTypes = nameCollection;
-		this.subTypes.allocateName(reference.getClassName().simpleName());
-		this.topLevelBuilder = topLevelBuilder;
-		this.containingClassName = containingClassName;
-		var ourBuilder = TypeSpec.classBuilder(reference.getClassName())
-			.addModifiers(Modifier.STATIC);
-		generateTypeDefinition(ourBuilder, (RawJsonType.ObjectType) reference.getRawJsonType());
-		return ourBuilder.build();
-	}
-
-	private TypeName getType(String fieldName, MemberType type) {
-		switch (type) {
-			case MemberType.InlineDefinition(RawJsonType innerType) -> {
-				switch (innerType) {
-					case RawJsonType.ObjectType objectType -> {
-						var title = objectType.getTitle();
-						var simpleName = subTypes.allocateName(title != null ? title : fieldName);
-						var className = containingClassName.nestedClass(simpleName);
-						var typeSpec = TypeSpec.classBuilder(className)
-							.addModifiers(Modifier.STATIC);
-						generateTypeDefinition(typeSpec, objectType);
-						topLevelBuilder.addType(typeSpec.build());
-						return className;
-					}
-					case RawJsonType.StringType stringType -> {
-						return ClassName.get(String.class);
-					}
-					case RawJsonType.UnknownType unknownType -> {
-						return ClassName.get(JsonNode.class);
-					}
-					case RawJsonType.BooleanType booleanType -> {
-						return TypeName.BOOLEAN;
-					}
-					case RawJsonType.IntegerType integerType -> {
-						return TypeName.INT; // TODO: perhaps long?
-					}
-					case RawJsonType.ArrayType arrayType -> {
-						// TODO: bind the title and description and such from outside? unsure
-						return ParameterizedTypeName.get(ClassName.get(List.class), getType(fieldName, arrayType.getItems()));
-					}
-				}
-			}
-			case MemberType.Reference reference -> {
-				var schemaRef = reference.schemaReference();
-				return schemaRef.getClassName();
-			}
-			case MemberType.MergeDefinition mergeDefinition -> {
-				return getType(fieldName, new MemberType.InlineDefinition(mergeDefinition.type()));
-			}
-		}
-	}
-
-	private String guessFieldName(String name, MemberType memberType) {
-		if (name.startsWith("m."))
-			name = name.substring(2);
-		return name;
-	}
-
-	private void generateTypeDefinition(TypeSpec.Builder typeSpec, RawJsonType.ObjectType type) {
-		typeSpec.addModifiers(Modifier.PUBLIC, Modifier.FINAL);
-		var nameCollection = new NameCollection(NameCollection.NameType.FIELD_NAME, true);
-		var constructor = MethodSpec.constructorBuilder()
-			.addModifiers(Modifier.PUBLIC);
-		var requiredConstructor = MethodSpec.constructorBuilder()
-			.addModifiers(Modifier.PUBLIC);
-		var toString = CodeBlock.builder()
-			.add("$S", type.getTitle() + " [");
-		boolean isFirstProperty = true;
-		boolean anyNonRequired = false;
-		for (var entry : type.getProperties().entrySet()) {
-			var key = entry.getKey();
-			var value = entry.getValue();
-			var fieldName = nameCollection.allocateName(guessFieldName(key, value));
-			var fieldType = getType(fieldName, value);
-			var fieldSpec = (FieldSpec.builder(fieldType, fieldName, Modifier.PRIVATE));
-			var jsonPropertySpec = AnnotationSpec.builder(JsonProperty.class);
-			if (!fieldName.equals(key)) {
-				jsonPropertySpec.addMember("value", "$S", key);
-			}
-			if (type.getRequired().contains(key)) {
-				jsonPropertySpec.addMember("required", "true");
-				requiredConstructor.addParameter(fieldType, fieldName)
-					.addStatement("this.$L = $L", fieldName, fieldName);
-			} else {
-				anyNonRequired = true;
-			}
-			if (isFirstProperty) {
-				toString.add(" + $S + this.$L", " " + key + " = ", fieldName);
-			} else {
-				toString.add(" + $S + this.$L", ", " + key + " = ", fieldName);
-			}
-			constructor.addParameter(fieldType, fieldName)
-				.addStatement("this.$L = $L", fieldName, fieldName);
-			fieldSpec.addAnnotation(jsonPropertySpec.build());
-			typeSpec.addField(fieldSpec.build());
-			typeSpec.addMethod(MethodSpec.methodBuilder(fieldName)
-				.addModifiers(Modifier.PUBLIC)
-				.returns(fieldType)
-				.addStatement("return this.$L", fieldName)
-				.build());
-			isFirstProperty = false;
-		}
-		toString.add("+ $S", " ]");
-		if (anyNonRequired)
-			typeSpec.addMethod(requiredConstructor.build());
-		if (!requiredConstructor.build().parameters().isEmpty()) {
-			typeSpec.addMethod(MethodSpec.constructorBuilder().build());
-		}
-		typeSpec.addMethod(constructor.build())
-			.addMethod(MethodSpec.methodBuilder("toString")
-				.addAnnotation(Override.class)
-				.returns(String.class)
-				.addModifiers(Modifier.PUBLIC)
-				.addStatement("return $L", toString.build())
-				.build())
-		;
-
-	}
-
 }
