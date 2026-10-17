@@ -10,7 +10,7 @@ public class MatrixMain {
 		var clientServerApi = matrixGenerator.apiGenerator("client-server");
 		clientServerApi.generateRoutes("wellknown.yaml");
 		clientServerApi.generateRoutes("whoami.yaml");
-//		clientServerApi.generateRoutes("admin.yaml");
+		clientServerApi.generateRoutes("admin.yaml");
 		clientServerApi.schemaLibrary().writeFiles();
 	}
 }

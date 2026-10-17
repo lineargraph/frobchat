@@ -9,30 +9,25 @@ import moe.nea.frobmatrix.api.Route;
 import javax.lang.model.element.Modifier;
 import java.net.http.HttpResponse;
 import java.util.Locale;
-import java.util.Map;
 import java.util.stream.Stream;
 
-public class RouteGenerator {
+public class RouteGenerator extends JavaFileGenerator {
 	private final ApiGenerator generator;
 	private final String path;
 	private final String method;
 	final RawOpenApiRoutes.Route route;
-	final ClassName className;
-	TypeSpec.Builder typeSpec;
-	NameCollection subTypes = new NameCollection(NameCollection.NameType.CLASS_NAME, true);
 	MethodSpec.Builder responseParser;
 
 	public RouteGenerator(
 		ApiGenerator generator, String path, String method,
 		RawOpenApiRoutes.Route route,
 		ClassName className) {
+		super(generator.schemaLibrary(), className);
 		this.generator = generator;
 		this.path = path;
 		this.method = method;
 		this.route = route;
-		this.className = className;
-		this.typeSpec = TypeSpec.classBuilder(className)
-			.addModifiers(Modifier.PUBLIC, Modifier.FINAL);
+		this.typeSpec.addModifiers(Modifier.PUBLIC, Modifier.FINAL);
 	}
 
 	public JavaFile generate() {
@@ -65,9 +60,9 @@ public class RouteGenerator {
 			.addStatement("default: return $T.unknownResponseError(responseInfo)", ResponseHelpers.class)
 			.endControlFlow()
 			.build());
-		return JavaFile.builder(className.packageName(), typeSpec.build()).build();
-
+		return JavaFile.builder(topLevelClass.packageName(), typeSpec.build()).build();
 	}
+
 
 	private void generateErrorResponse(int statusCode, RawOpenApiRoutes.Response response) {
 		for (var entry : response.getContent().entrySet()) {
@@ -76,18 +71,9 @@ public class RouteGenerator {
 				throw new RuntimeException("Unhandled content type application/json");
 			var responseContent = entry.getValue();
 			boolean isError = statusCode != 200;
-			TypeName resultType = switch (responseContent.getSchema()) {
-				case MemberType.DirectDeclaration directDeclaration -> {
-					var reference = new SchemaReference(
-						generator.schemaLibrary(),
-						directDeclaration.type(),
-						className.nestedClass(isError ? "Response" + statusCode : "Response")
-					);
-					typeSpec.addType(new SchemaReferenceGeneration(reference).generateNested(subTypes, className, typeSpec));
-					yield reference.getClassName();
-				}
-				case MemberType.Reference reference -> reference.schemaReference().getClassName();
-			};
+			TypeName resultType = generateAdHocTypeDefinition(
+				isError ? "Response" + statusCode : "Response",
+				responseContent.getSchema());
 			if (!isError) {
 				this.typeSpec.superclass(ParameterizedTypeName.get(ClassName.get(Route.class), resultType));
 				this.responseParser
