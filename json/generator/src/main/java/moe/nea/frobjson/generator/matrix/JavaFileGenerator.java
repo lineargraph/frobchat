@@ -91,7 +91,7 @@ public abstract class JavaFileGenerator {
 	}
 
 	private String guessFieldName(String name, MemberType memberType) {
-		if (name.startsWith("m."))
+		if (name.startsWith("m.")) // TODO: this is matrix specific, add more generic interface
 			name = name.substring(2);
 		return name;
 	}

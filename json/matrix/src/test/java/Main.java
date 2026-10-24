@@ -1,4 +1,4 @@
-import moe.nea.frobmatrix.api.wellknown.GetWellknown;
+import moe.nea.frobmatrix.api.clientserver.routes.wellknown.GetWellknown;
 
 import java.net.http.HttpClient;
 

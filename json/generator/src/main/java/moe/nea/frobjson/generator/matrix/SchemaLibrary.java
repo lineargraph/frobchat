@@ -71,4 +71,8 @@ public class SchemaLibrary {
 		}
 		return packageName.toString();
 	}
+
+	public String rootPackage() {
+		return rootPackage;
+	}
 }

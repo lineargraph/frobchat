@@ -35,7 +35,7 @@ public class ApiGenerator {
 
 	public void generateRoutes(String path) {
 		var rawRoutes = YAMLUtils.readFile(schemaLibrary, rootFolder.resolve(path), RawOpenApiRoutes.class);
-		var packageName = matrixGenerator.basePackage() + ".api." + path.replace("-", "").replace(".yaml", "");
+		var packageName = schemaLibrary.rootPackage() + ".routes." + path.replace("-", "").replace(".yaml", "");
 		for (var file : new RoutesGenerator(this, rawRoutes, packageName).generate()) {
 			matrixGenerator.writeType(file);
 		}
