@@ -2,7 +2,6 @@ package moe.nea.frobmatrix.api;
 
 import java.io.IOException;
 import java.net.URI;
-import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 
@@ -19,20 +18,20 @@ public abstract class Route<T> {
 		GET, POST, PUT
 	}
 
-	public HttpResponse<T> execute(HttpClient client) {
+	public HttpResponse<T> execute(MatrixRESTClient client) {
 		try {
-			return client.send(asHttpRequest(), bodyHandler());
+			return client.client().send(asHttpRequest(client), bodyHandler());
 		} catch (IOException | InterruptedException e) {
 			throw new RuntimeException(e);
 		}
 	}
 
-	public HttpRequest asHttpRequest() {
-		return buildHttpRequest().build();
+	public HttpRequest asHttpRequest(MatrixRESTClient client) {
+		return client.postProcess(buildHttpRequest(client)).build();
 	}
 
-	public HttpRequest.Builder buildHttpRequest() {
-		return HttpRequest.newBuilder(URI.create("https://nea.moe" + path()))
+	public HttpRequest.Builder buildHttpRequest(MatrixRESTClient client) {
+		return HttpRequest.newBuilder(URI.create(client.basePath() + path()))
 			.method(method().name(), HttpRequest.BodyPublishers.noBody())
 			.header("accept", "application/json");
 	}
