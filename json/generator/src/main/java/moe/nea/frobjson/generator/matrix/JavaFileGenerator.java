@@ -118,7 +118,9 @@ public abstract class JavaFileGenerator {
 				return TypeName.BOOLEAN;
 			}
 			case RawJsonType.IntegerType integerType -> {
-				return TypeName.INT; // TODO: perhaps long?
+				if ("int64".equals(integerType.getFormat()))
+					return TypeName.LONG;
+				return TypeName.INT; // TODO: perhaps long always?
 			}
 			case RawJsonType.ArrayType arrayType -> {
 				// TODO: bind the title and description and such from outside? unsure
