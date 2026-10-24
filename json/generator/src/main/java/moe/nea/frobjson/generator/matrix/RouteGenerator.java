@@ -94,32 +94,42 @@ public class RouteGenerator extends JavaFileGenerator {
 	}
 
 	private void addPathMethod() {
-		var pathMatcher = PATH_PATTERN.matcher(path);
 		var method = MethodSpec.methodBuilder("path")
 			.addModifiers(Modifier.PUBLIC)
 			.returns(String.class)
 			.addAnnotation(Override.class);
 		method.addCode("return ");
-		int lastAppendPosition = 0;
-		boolean isFirst = true;
-		while (pathMatcher.find()) {
-			if (isFirst) {
-				isFirst = false;
-			} else {
-				method.addCode(" + ");
+		{
+			var pathMatcher = PATH_PATTERN.matcher(path);
+			int lastAppendPosition = 0;
+			boolean isFirst = true;
+			while (pathMatcher.find()) {
+				if (isFirst) {
+					isFirst = false;
+				} else {
+					method.addCode(" + ");
+				}
+				var skipped = path.substring(lastAppendPosition, pathMatcher.start());
+				if (!skipped.isEmpty())
+					method.addCode("$S + ", skipped);
+				method.addCode("$T.urlEncodeString($L)", ResponseHelpers.class, Objects.requireNonNull(parameterNameToField.get(pathMatcher.group(1))));
+				lastAppendPosition = pathMatcher.end();
 			}
-			var skipped = path.substring(lastAppendPosition, pathMatcher.start());
-			if (!skipped.isEmpty())
-				method.addCode("$S + ", skipped);
-			method.addCode("$T.urlEncodeString($L)", ResponseHelpers.class, Objects.requireNonNull(parameterNameToField.get(pathMatcher.group(1))));
-			lastAppendPosition = pathMatcher.end();
+			var rest = path.substring(lastAppendPosition);
+			if (!rest.isEmpty()) {
+				if (!isFirst)
+					method.addCode(" + ");
+				method.addCode("$S", rest);
+			}
 		}
-		var rest = path.substring(lastAppendPosition);
-		if (!rest.isEmpty()) {
-			if (!isFirst)
-				method.addCode(" + ");
-			method.addCode("$S", rest);
+
+		boolean hadQ = false;
+		for (var parameter : route.getParameters()) {
+			if (parameter.getIn() != RawOpenApiRoutes.ParameterLocation.QUERY) continue;
+			method.addCode(" + $S + $T.urlEncodeString($L)", (hadQ ? "&" : "?") + ResponseHelpers.urlEncodeString(parameter.getName()) + "=", ResponseHelpers.class, Objects.requireNonNull(parameterNameToField.get(parameter.getName())));
+			hadQ = true;
 		}
+
 		method.addCode(";");
 		topLevelSpec.addMethod(method.build());
 	}
