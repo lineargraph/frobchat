@@ -34,6 +34,8 @@ public sealed abstract class RawJsonType {
 	@JsonProperty("x-addedInMatrixVersion")
 	private @Nullable Void addedInMatrixVersion;
 	private boolean deprecated = false;
+	@JsonProperty("x-manualPackageOverride")
+	private @Nullable String manualPackageOverride;
 
 	// Pseudo type for "missing" types. Most likely this is for free form types
 	@ToString(callSuper = true)

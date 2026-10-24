@@ -19,18 +19,21 @@ public class YAMLUtils {
 	}
 
 	public record FolderContext(
-		Path folder,
+		Path file,
 		SchemaLibrary library,
 		List<Unlazyable> unlazyables
 	) {
+		public Path folder() {
+			return file.getParent();
+		}
 	}
 
 	private static ThreadLocal<FolderContext> CURRENT_FOLDER = new ThreadLocal<>();
 
-	public static <T> T withContextFolder(SchemaLibrary library, Path folder, Supplier<T> supplier) {
-		assert Files.isDirectory(folder);
+	public static <T> T withContextFolder(SchemaLibrary library, Path file, Supplier<T> supplier) {
+		assert Files.isRegularFile(file);
 		assert CURRENT_FOLDER.get() == null;
-		var context = new FolderContext(folder, library, new ArrayList<>());
+		var context = new FolderContext(file, library, new ArrayList<>());
 		CURRENT_FOLDER.set(context);
 		try {
 			return supplier.get();
@@ -64,7 +67,7 @@ public class YAMLUtils {
 
 	public static <T> T readFile(SchemaLibrary library, Path file, Class<T> type) {
 		try {
-			return withContextFolder(library, file.getParent(), () -> MAPPER.readValue(file, type));
+			return withContextFolder(library, file, () -> MAPPER.readValue(file, type));
 		} catch (Exception e) {
 			throw new RuntimeException("While reading " + file, e);
 		}

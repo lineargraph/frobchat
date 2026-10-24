@@ -2,10 +2,12 @@ package moe.nea.frobjson.generator.matrix;
 
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 import tools.jackson.core.JacksonException;
 import tools.jackson.core.JsonParser;
 import tools.jackson.databind.DeserializationContext;
 import tools.jackson.databind.JavaType;
+import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ValueDeserializer;
 import tools.jackson.databind.deser.Deserializers;
 import tools.jackson.databind.module.SimpleDeserializers;
@@ -22,11 +24,25 @@ import java.util.stream.Stream;
 
 public sealed interface MemberType {
 
+	record TypeResolutionContext(
+		YAMLUtils.FolderContext context,
+		@Nullable String title,
+		JsonNode node
+	) {
+	}
+
 	private static MemberType deserialize(JsonParser p, DeserializationContext ctxt) throws JacksonException {
 		ObjectNode tree = p.readValueAsTree();
+		var context = Objects.requireNonNull(YAMLUtils.getContext());
+		var typeResolutionContext = new TypeResolutionContext(
+			context,
+			tree.has("title") ? tree.get("title").asString() : null,
+			tree
+		);
+		var override = context.library().resolveOverride(typeResolutionContext);
+		if (override != null) return override;
 		if (tree.has("$ref")) {
 			assert tree.size() == 1;
-			var context = Objects.requireNonNull(YAMLUtils.getContext());
 			return new Reference(
 				context.library(),
 				context.folder(),
@@ -65,6 +81,23 @@ public sealed interface MemberType {
 		@Override
 		public @NonNull String toString() {
 			return type.toString();
+		}
+	}
+
+	@RequiredArgsConstructor
+	final class TypeOverride implements DirectDeclaration, Unlazyable {
+		final Path path;
+		final SchemaLibrary schemaLibrary;
+		RawJsonType type;
+
+		@Override
+		public RawJsonType type() {
+			return type;
+		}
+
+		@Override
+		public void unlazy() {
+			type = YAMLUtils.readFile(schemaLibrary, path, RawJsonType.class);
 		}
 	}
 

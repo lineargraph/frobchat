@@ -12,7 +12,12 @@ import java.util.Map;
 public class MatrixGenerator {
 	private final Path matrixSpecRoot;
 	private final Path destinationFolder;
+	private final Path extraSchemasRoot;
 	private final String basePackage = "moe.nea.frobmatrix";
+
+	public Path extraSchemasRoot() {
+		return extraSchemasRoot;
+	}
 
 	public String basePackage() {
 		return basePackage;
@@ -42,9 +47,10 @@ public class MatrixGenerator {
 		return destinationFolder;
 	}
 
-	public MatrixGenerator(Path matrixSpecRoot, Path destinationFolder) {
+	public MatrixGenerator(Path matrixSpecRoot, Path destinationFolder, Path extraSchemasRoot) {
 		this.matrixSpecRoot = matrixSpecRoot;
 		this.destinationFolder = destinationFolder;
+		this.extraSchemasRoot = extraSchemasRoot;
 	}
 
 	public ClassName allocateClassName(String packageName, String title) {

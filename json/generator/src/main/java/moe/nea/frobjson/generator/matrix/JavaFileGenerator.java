@@ -3,6 +3,7 @@ package moe.nea.frobjson.generator.matrix;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.palantir.javapoet.*;
 import moe.nea.frobjson.generator.NameCollection;
+import moe.nea.frobjson.generator.TypeUtils;
 import tools.jackson.databind.JsonNode;
 
 import javax.lang.model.element.Modifier;
@@ -45,8 +46,10 @@ public abstract class JavaFileGenerator {
 			var key = entry.getKey();
 			var value = entry.getValue();
 			var fieldName = nameCollection.allocateName(guessFieldName(key, value));
+			var deprecated = value instanceof MemberType.DirectDeclaration decl && decl.type().isDeprecated();
 			var fieldType = getType(fieldName, value);
-			var fieldSpec = (FieldSpec.builder(fieldType, fieldName, Modifier.PRIVATE));
+			var fieldSpec = (FieldSpec.builder(fieldType, fieldName, Modifier.PRIVATE))
+				.addAnnotations(TypeUtils.deprecatedIf(deprecated));
 			var jsonPropertySpec = AnnotationSpec.builder(JsonProperty.class);
 			if (!fieldName.equals(key)) {
 				jsonPropertySpec.addMember("value", "$S", key);
@@ -71,6 +74,7 @@ public abstract class JavaFileGenerator {
 				.addModifiers(Modifier.PUBLIC)
 				.returns(fieldType)
 				.addStatement("return this.$L", fieldName)
+				.addAnnotations(TypeUtils.deprecatedIf(deprecated))
 				.build());
 			isFirstProperty = false;
 		}

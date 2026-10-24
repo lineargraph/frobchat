@@ -6,6 +6,7 @@ import com.palantir.javapoet.ParameterizedTypeName;
 import com.palantir.javapoet.TypeName;
 import org.jspecify.annotations.Nullable;
 
+import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
@@ -22,6 +23,12 @@ public class TypeUtils {
 		}
 		return name;
 	}
+
+	public static List<AnnotationSpec> deprecatedIf(boolean deprecated) {
+		if (!deprecated) return List.of();
+		return List.of(AnnotationSpec.builder(Deprecated.class).build());
+	}
+
 	public static AnnotationSpec buildSuppressWarnings(Stream<? extends String> warnings) {
 		return AnnotationSpec.builder(SuppressWarnings.class)
 			.addMember("value", warnings
@@ -29,6 +36,7 @@ public class TypeUtils {
 				.collect(CodeBlock.joining(", ", "{", "}")))
 			.build();
 	}
+
 	public static Pattern linkPattern = Pattern.compile("\\[([^\\]]+)\\]\\(([^\\)]+)\\)");
 	public static Pattern codePattern = Pattern.compile("`([^`]+)`");
 
@@ -36,11 +44,11 @@ public class TypeUtils {
 		var sb = new StringBuilder();
 		{
 			var matcher = linkPattern.matcher(description
-					.replace("&", "&amp;")
-					.replace("<", "&lt;")
-					.replace(">", "&gt;")
-					.replace("}", "&rcub;")
-					.replace("{", "&lcub;")
+				.replace("&", "&amp;")
+				.replace("<", "&lt;")
+				.replace(">", "&gt;")
+				.replace("}", "&rcub;")
+				.replace("{", "&lcub;")
 				.replace("\n\n", "\n<br>\n"));
 			while (matcher.find()) {
 				matcher.appendReplacement(sb, "<a href=\"$2\">$1</a>");
