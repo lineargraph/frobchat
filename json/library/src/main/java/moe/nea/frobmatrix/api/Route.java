@@ -13,6 +13,8 @@ public abstract class Route<T> {
 
 	public abstract String rawPath();
 
+	public abstract String path();
+
 	public enum Method {
 		GET, POST, PUT
 	}
@@ -30,7 +32,7 @@ public abstract class Route<T> {
 	}
 
 	public HttpRequest.Builder buildHttpRequest() {
-		return HttpRequest.newBuilder(URI.create("https://nea.moe" + rawPath()))
+		return HttpRequest.newBuilder(URI.create("https://nea.moe" + path()))
 			.method(method().name(), HttpRequest.BodyPublishers.noBody())
 			.header("accept", "application/json");
 	}

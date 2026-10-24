@@ -4,6 +4,7 @@ import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.io.InputStreamReader;
+import java.net.URLEncoder;
 import java.net.http.HttpResponse;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -15,6 +16,10 @@ public class ResponseHelpers {
 	private final static ObjectMapper MAPPER = new JsonMapper();
 
 	public record ContentType(String contentType, Map<String, String> extraInformation) {
+	}
+
+	public static String urlEncodeString(String string) {
+		return URLEncoder.encode(string, StandardCharsets.UTF_8);
 	}
 
 	public static Map<String, String> parseExtraInformation(String extraInformation) {

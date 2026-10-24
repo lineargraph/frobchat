@@ -10,6 +10,7 @@ import java.util.List;
 
 public abstract class JavaFileGenerator {
 	final NameCollection subTypes = new NameCollection(NameCollection.NameType.CLASS_NAME, true);
+	final NameCollection fieldNames = new NameCollection(NameCollection.NameType.FIELD_NAME, true);
 	private final SchemaLibrary schemaLibrary;
 	final ClassName topLevelClass;
 	final TypeSpec.Builder topLevelSpec;

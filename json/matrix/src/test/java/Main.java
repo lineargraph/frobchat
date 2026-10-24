@@ -1,3 +1,5 @@
+import moe.nea.frobmatrix.MxUserId;
+import moe.nea.frobmatrix.api.clientserver.routes.admin.GetWhoIs;
 import moe.nea.frobmatrix.api.clientserver.routes.wellknown.GetWellknown;
 
 import java.net.http.HttpClient;
@@ -6,6 +8,8 @@ public class Main {
 	public static void main(String[] args) {
 		var httpClient = HttpClient.newHttpClient();
 		System.out.println(new GetWellknown().execute(httpClient).body());
+		var TEST_TOKEN = "syt_dGVzdA_oUuqBZxodLPeyCoEyTLR_22RpPL";
+		var TEST_USER = MxUserId.parse("@test:nea.moe");
 //		var client = MatrixClient.client(
 //			httpClient,
 //			MatrixAuthentication.anon("https://nea.moe")
