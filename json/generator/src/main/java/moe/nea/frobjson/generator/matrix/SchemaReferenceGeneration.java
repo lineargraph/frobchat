@@ -12,7 +12,7 @@ public class SchemaReferenceGeneration extends JavaFileGenerator {
 
 
 	public JavaFile generate() {
-		writeTypeDefinition(topLevelSpec, (RawJsonType.ObjectType) reference.getRawJsonType());
+		writeTypeDefinition(topLevelClass, topLevelSpec, (RawJsonType.ObjectType) reference.getRawJsonType());
 		return JavaFile.builder(reference.getClassName().packageName(), topLevelSpec.build())
 			.build();
 	}

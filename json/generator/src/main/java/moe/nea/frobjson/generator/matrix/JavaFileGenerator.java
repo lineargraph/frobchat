@@ -25,6 +25,7 @@ public abstract class JavaFileGenerator {
 	}
 
 	protected void writeTypeDefinition(
+		ClassName name,
 		TypeSpec.Builder typeSpec,
 		RawJsonType.ObjectType type
 	) {
@@ -35,7 +36,7 @@ public abstract class JavaFileGenerator {
 		var requiredConstructor = MethodSpec.constructorBuilder()
 			.addModifiers(Modifier.PUBLIC);
 		var toString = CodeBlock.builder()
-			.add("$S", type.getTitle() + " [");
+			.add("$S", String.join(".", name.simpleNames()) + " [");
 		boolean isFirstProperty = true;
 		boolean anyNonRequired = false;
 		for (var entry : type.getProperties().entrySet()) {
@@ -105,7 +106,7 @@ public abstract class JavaFileGenerator {
 				var className = topLevelClass.nestedClass(simpleName);
 				var typeSpec = TypeSpec.classBuilder(className)
 					.addModifiers(Modifier.STATIC);
-				writeTypeDefinition(typeSpec, objectType);
+				writeTypeDefinition(className, typeSpec, objectType);
 				topLevelSpec.addType(typeSpec.build());
 				return className;
 			}
