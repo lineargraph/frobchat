@@ -1,5 +1,7 @@
 package moe.nea.frobmatrix.api;
 
+import org.jspecify.annotations.Nullable;
+
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpRequest;
@@ -31,9 +33,21 @@ public abstract class Route<T> {
 	}
 
 	public HttpRequest.Builder buildHttpRequest(MatrixRESTClient client) {
-		return HttpRequest.newBuilder(URI.create(client.basePath() + path()))
-			.method(method().name(), HttpRequest.BodyPublishers.noBody())
+		var builder = HttpRequest.newBuilder(URI.create(client.basePath() + path()))
+			.method(method().name(), bodyPublisher())
 			.header("accept", "application/json");
+		var contentType = contentType();
+		if (contentType != null)
+			builder.header("Content-Type", contentType);
+		return builder;
+	}
+
+	public @Nullable String contentType() {
+		return null;
+	}
+
+	public HttpRequest.BodyPublisher bodyPublisher() {
+		return HttpRequest.BodyPublishers.noBody();
 	}
 
 	public HttpResponse.BodyHandler<T> bodyHandler() {

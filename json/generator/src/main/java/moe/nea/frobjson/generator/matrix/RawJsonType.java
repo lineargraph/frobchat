@@ -33,6 +33,7 @@ public sealed abstract class RawJsonType {
 	private @Nullable JsonNode example;
 	@JsonProperty("x-addedInMatrixVersion")
 	private @Nullable Void addedInMatrixVersion;
+	private boolean deprecated = false;
 
 	// Pseudo type for "missing" types. Most likely this is for free form types
 	@ToString(callSuper = true)

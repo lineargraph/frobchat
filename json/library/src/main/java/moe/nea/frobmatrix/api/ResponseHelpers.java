@@ -4,7 +4,11 @@ import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.PipedInputStream;
+import java.io.PipedOutputStream;
 import java.net.URLEncoder;
+import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -14,6 +18,10 @@ import java.util.Map;
 
 public class ResponseHelpers {
 	private final static ObjectMapper MAPPER = new JsonMapper();
+
+	public static <T> HttpRequest.BodyPublisher publishJson(T body, Class<T> bodyType) {
+		return HttpRequest.BodyPublishers.ofByteArray(MAPPER.writeValueAsBytes(body));
+	}
 
 	public record ContentType(String contentType, Map<String, String> extraInformation) {
 	}

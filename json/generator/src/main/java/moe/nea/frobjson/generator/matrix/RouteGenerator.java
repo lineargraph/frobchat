@@ -6,6 +6,7 @@ import moe.nea.frobmatrix.api.ResponseHelpers;
 import moe.nea.frobmatrix.api.Route;
 
 import javax.lang.model.element.Modifier;
+import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.HashMap;
 import java.util.Locale;
@@ -21,6 +22,9 @@ public class RouteGenerator extends JavaFileGenerator {
 	final RawOpenApiRoutes.Route route;
 	MethodSpec.Builder responseParser;
 	Map<String, String> parameterNameToField = new HashMap<>();
+
+	MethodSpec.Builder allParametersConstructor = MethodSpec.constructorBuilder()
+		.addModifiers(Modifier.PUBLIC);
 
 	public RouteGenerator(
 		ApiGenerator generator, String path, String method,
@@ -49,9 +53,7 @@ public class RouteGenerator extends JavaFileGenerator {
 			.returns(String.class)
 			.addStatement("return $S", path)
 			.build());
-
-		var allParameters = MethodSpec.constructorBuilder()
-			.addModifiers(Modifier.PUBLIC);
+		addBodyMethod();
 
 		for (var parameter : route.getParameters()) {
 			var parameterFieldName = fieldNames.allocateName(parameter.getName());
@@ -64,14 +66,13 @@ public class RouteGenerator extends JavaFileGenerator {
 					.addStatement("return this.$L", parameterFieldName)
 					.build());
 			parameterNameToField.put(parameter.getName(), parameterFieldName);
-			allParameters
+			allParametersConstructor
 				.addParameter(parameterType, parameterFieldName)
 				.addStatement("this.$L = $L", parameterFieldName, parameterFieldName);
 		}
 
-		topLevelSpec.addMethod(allParameters.build());
-
 		addPathMethod();
+
 
 		this.responseParser = MethodSpec.methodBuilder("handleResponseInfo")
 			.addModifiers(Modifier.PUBLIC)
@@ -86,11 +87,38 @@ public class RouteGenerator extends JavaFileGenerator {
 			generateErrorResponse(statusCode, response);
 		}
 
+		topLevelSpec.addMethod(allParametersConstructor.build());
 		topLevelSpec.addMethod(this.responseParser
 			.addStatement("default: return $T.unknownResponseError(responseInfo)", ResponseHelpers.class)
 			.endControlFlow()
 			.build());
 		return JavaFile.builder(topLevelClass.packageName(), topLevelSpec.build()).build();
+	}
+
+	private void addBodyMethod() {
+		var requestBody = route.getRequestBody();
+		if (requestBody == null) return;
+		assert requestBody.getContent().size() == 1;
+		var content = Objects.requireNonNull(requestBody.getContent().get("application/json"));
+		var requestBodyType = generateAdHocTypeDefinition("RequestBody", content.getSchema());
+		topLevelSpec.addField(requestBodyType, "requestBody")
+			.addMethod(MethodSpec.methodBuilder("requestBody")
+				.returns(requestBodyType)
+				.addStatement("return this.requestBody")
+				.addModifiers(Modifier.PUBLIC)
+				.build())
+			.addMethod(MethodSpec.methodBuilder("contentType")
+				.returns(String.class)
+				.addAnnotation(Override.class)
+				.addModifiers(Modifier.PUBLIC)
+				.addStatement("return $S", "application/json")
+				.build())
+			.addMethod(MethodSpec.methodBuilder("bodyPublisher")
+				.returns(HttpRequest.BodyPublisher.class)
+				.addAnnotation(Override.class)
+				.addModifiers(Modifier.PUBLIC)
+				.addStatement("return $T.publishJson(requestBody, $T.class)", ResponseHelpers.class, requestBodyType)
+				.build());
 	}
 
 	private void addPathMethod() {

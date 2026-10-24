@@ -30,6 +30,8 @@ public abstract class JavaFileGenerator {
 		RawJsonType.ObjectType type
 	) {
 		typeSpec.addModifiers(Modifier.PUBLIC, Modifier.FINAL);
+		if (type.isDeprecated())
+			typeSpec.addAnnotation(Deprecated.class);
 		var nameCollection = new NameCollection(NameCollection.NameType.FIELD_NAME, true);
 		var constructor = MethodSpec.constructorBuilder()
 			.addModifiers(Modifier.PUBLIC);

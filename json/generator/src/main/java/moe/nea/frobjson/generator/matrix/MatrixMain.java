@@ -12,6 +12,7 @@ public class MatrixMain {
 		clientServerApi.generateRoutes("whoami.yaml");
 		clientServerApi.generateRoutes("admin.yaml");
 		clientServerApi.generateRoutes("registration_tokens.yaml");
+		clientServerApi.generateRoutes("login.yaml");
 //		clientServerApi.generateRoutes("room_summary.yaml");
 		clientServerApi.schemaLibrary().writeFiles();
 	}
