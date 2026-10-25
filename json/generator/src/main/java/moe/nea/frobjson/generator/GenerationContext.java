@@ -44,15 +44,15 @@ public class GenerationContext {
 
 		if (element instanceof JsonObject obj) {
 			var title = JsonUtil.getStringOrNull(obj.get("title"));
-			if (title != null) return typeNames.foldName(title);
+			if (title != null) return typeNames.foldName(title, typeNames.nameType);
 			var allOf = obj.getAsJsonArray("allOf");
 			if (allOf != null) {
 				return guessName(propertyName, parent, JsonUtil.stream(allOf).reduce(JsonUtil::mergeVariantOverriding).get());
 			}
 		}
 		if (parent != null)
-			return typeNames.foldName(parent.name() + "-" + propertyName);
-		return typeNames.foldName(propertyName);
+			return typeNames.foldName(parent.name() + "-" + propertyName, typeNames.nameType);
+		return typeNames.foldName(propertyName, typeNames.nameType);
 	}
 
 	public void writeClosure(Path directory) throws IOException {

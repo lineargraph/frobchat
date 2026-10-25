@@ -1,6 +1,7 @@
 package moe.nea.frobjson.generator.matrix;
 
 import com.palantir.javapoet.*;
+import moe.nea.frobjson.generator.NameCollection;
 import moe.nea.frobjson.generator.TypeUtils;
 import moe.nea.frobmatrix.api.ResponseHelpers;
 import moe.nea.frobmatrix.api.Route;
@@ -15,93 +16,39 @@ import java.util.Objects;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
-public class RouteGenerator extends JavaFileGenerator {
-	private final ApiGenerator generator;
+public class RouteGenerator implements ClassGenerator {
+	public static final Pattern PATH_PATTERN = Pattern.compile("\\{([^}]+)\\}");
+
+	// Route data
 	private final String path;
 	private final String method;
-	final RawOpenApiRoutes.Route route;
-	MethodSpec.Builder responseParser;
-	Map<String, String> parameterNameToField = new HashMap<>();
+	private final RawOpenApiRoutes.Route route;
 
-	MethodSpec.Builder allParametersConstructor = MethodSpec.constructorBuilder()
+	// Type resolution data
+	private final Map<String, String> parameterNameToField = new HashMap<>();
+	private final Map<RawOpenApiRoutes.ResponseContent, TypeName> responseContentTypes = new HashMap<>();
+	private TypeName requestBodyType;
+	private final Map<RawOpenApiRoutes.Parameter, TypeName> parameterTypes = new HashMap<>();
+
+	// Shared state during generation
+	private final NameCollection fieldNames = new NameCollection(NameCollection.NameType.FIELD_NAME, true);
+	private final MethodSpec.Builder allParametersConstructor = MethodSpec.constructorBuilder()
 		.addModifiers(Modifier.PUBLIC);
+	private MethodSpec.Builder responseParser;
 
 	public RouteGenerator(
-		ApiGenerator generator, String path, String method,
-		RawOpenApiRoutes.Route route,
-		ClassName className) {
-		super(generator.schemaLibrary(), className);
-		this.generator = generator;
+		String path,
+		String method,
+		RawOpenApiRoutes.Route route
+	) {
 		this.path = path;
 		this.method = method;
 		this.route = route;
-		this.topLevelSpec.addModifiers(Modifier.PUBLIC, Modifier.FINAL);
 	}
 
-	public static final Pattern PATH_PATTERN = Pattern.compile("\\{([^}]+)\\}");
-
-	public JavaFile generate() {
-		topLevelSpec.addMethod(MethodSpec.methodBuilder("method")
-			.addModifiers(Modifier.PUBLIC)
-			.addAnnotation(Override.class)
-			.returns(Route.Method.class)
-			.addStatement("return $T.$L", Route.Method.class, method.toUpperCase(Locale.ROOT))
-			.build());
-		topLevelSpec.addMethod(MethodSpec.methodBuilder("rawPath")
-			.addModifiers(Modifier.PUBLIC)
-			.addAnnotation(Override.class)
-			.returns(String.class)
-			.addStatement("return $S", path)
-			.build());
-		addBodyMethod();
-
-		for (var parameter : route.getParameters()) {
-			var parameterFieldName = fieldNames.allocateName(parameter.getName());
-			var parameterType = generateAdHocTypeDefinition(parameter.getName(), parameter.getSchema());
-			topLevelSpec
-				.addField(parameterType, parameterFieldName, Modifier.PRIVATE)
-				.addMethod(MethodSpec.methodBuilder(parameterFieldName)
-					.returns(parameterType)
-					.addModifiers(Modifier.PUBLIC)
-					.addStatement("return this.$L", parameterFieldName)
-					.build());
-			parameterNameToField.put(parameter.getName(), parameterFieldName);
-			allParametersConstructor
-				.addParameter(parameterType, parameterFieldName)
-				.addStatement("this.$L = $L", parameterFieldName, parameterFieldName);
-		}
-
-		addPathMethod();
-
-
-		this.responseParser = MethodSpec.methodBuilder("handleResponseInfo")
-			.addModifiers(Modifier.PUBLIC)
-			.addAnnotation(TypeUtils.buildSuppressWarnings(Stream.of("RedundantSuppression", "SwitchStatementWithTooFewBranches", "EnhancedSwitchMigration", "DuplicateBranchesInSwitch")))
-			.addAnnotation(Override.class)
-			.addParameter(HttpResponse.ResponseInfo.class, "responseInfo")
-			.beginControlFlow("switch (responseInfo.statusCode())");
-
-		for (var entry : route.getResponses().entrySet()) {
-			var statusCode = entry.getKey();
-			var response = entry.getValue();
-			generateErrorResponse(statusCode, response);
-		}
-
-		topLevelSpec.addMethod(allParametersConstructor.build());
-		topLevelSpec.addMethod(this.responseParser
-			.addStatement("default: return $T.unknownResponseError(responseInfo)", ResponseHelpers.class)
-			.endControlFlow()
-			.build());
-		return JavaFile.builder(topLevelClass.packageName(), topLevelSpec.build()).build();
-	}
-
-	private void addBodyMethod() {
-		var requestBody = route.getRequestBody();
-		if (requestBody == null) return;
-		assert requestBody.getContent().size() == 1;
-		var content = Objects.requireNonNull(requestBody.getContent().get("application/json"));
-		var requestBodyType = generateAdHocTypeDefinition("RequestBody", content.getSchema());
-		topLevelSpec.addField(requestBodyType, "requestBody")
+	private void addBodyMethod(TypeSpec.Builder spec) {
+		if (requestBodyType == null) return;
+		spec.addField(requestBodyType, "requestBody")
 			.addMethod(MethodSpec.methodBuilder("requestBody")
 				.returns(requestBodyType)
 				.addStatement("return this.requestBody")
@@ -121,7 +68,7 @@ public class RouteGenerator extends JavaFileGenerator {
 				.build());
 	}
 
-	private void addPathMethod() {
+	private void addPathMethod(TypeSpec.Builder spec) {
 		var method = MethodSpec.methodBuilder("path")
 			.addModifiers(Modifier.PUBLIC)
 			.returns(String.class)
@@ -159,22 +106,19 @@ public class RouteGenerator extends JavaFileGenerator {
 		}
 
 		method.addCode(";");
-		topLevelSpec.addMethod(method.build());
+		spec.addMethod(method.build());
 	}
 
-
-	private void generateErrorResponse(int statusCode, RawOpenApiRoutes.Response response) {
+	private void generateErrorResponse(TypeSpec.Builder spec, int statusCode, RawOpenApiRoutes.Response response) {
 		for (var entry : response.getContent().entrySet()) {
 			var contentType = entry.getKey();
 			if (!contentType.equals("application/json"))
 				throw new RuntimeException("Unhandled content type application/json");
 			var responseContent = entry.getValue();
+			var resultType = responseContentTypes.get(responseContent);
 			boolean isError = statusCode != 200;
-			TypeName resultType = generateAdHocTypeDefinition(
-				isError ? "Response" + statusCode : "Response",
-				responseContent.getSchema());
 			if (!isError) {
-				this.topLevelSpec.superclass(ParameterizedTypeName.get(ClassName.get(Route.class), resultType));
+				spec.superclass(ParameterizedTypeName.get(ClassName.get(Route.class), resultType));
 				this.responseParser
 					.returns(ParameterizedTypeName.get(ClassName.get(HttpResponse.BodySubscriber.class), resultType))
 					.addStatement("case $L: return $T.parseJson(responseInfo, $T.class)", statusCode, ResponseHelpers.class, resultType);
@@ -183,5 +127,88 @@ public class RouteGenerator extends JavaFileGenerator {
 					.addStatement("case $L: return $T.parseErrorJson(responseInfo, $T.class)", statusCode, ResponseHelpers.class, resultType);
 			}
 		}
+	}
+
+	@Override
+	public void emitDependencies(NameSpace.ClassNameSpace classNameSpace) {
+		for (var parameter : route.getParameters()) {
+			var parameterType = resolveTypeName(classNameSpace, parameter.getName(), parameter.getSchema());
+			parameterTypes.put(parameter, parameterType);
+		}
+		var requestBody = route.getRequestBody();
+		if (requestBody != null) {
+			assert requestBody.getContent().size() == 1;
+			var content = Objects.requireNonNull(requestBody.getContent().get("application/json"));
+			requestBodyType = resolveTypeName(classNameSpace, "RequestBody", content.getSchema());
+		}
+		for (var entry : route.getResponses().entrySet()) {
+			var statusCode = entry.getKey();
+			var response = entry.getValue();
+			if (response.getContent().isEmpty()) continue;
+			var content = response.getContent().get("application/json"); // TODO: handle non-json
+			var type = resolveTypeName(
+				classNameSpace,
+				statusCode != 200 ? "Response" + statusCode : "Response",
+				content.getSchema());
+			responseContentTypes.put(content, type);
+		}
+	}
+
+	@Override
+	public void writeType(TypeSpec.Builder spec, NameSpace.ClassNameSpace classNameSpace) {
+		spec.addModifiers(Modifier.PUBLIC, Modifier.FINAL)
+			.addMethod(MethodSpec.methodBuilder("method")
+				.addModifiers(Modifier.PUBLIC)
+				.addAnnotation(Override.class)
+				.returns(Route.Method.class)
+				.addStatement("return $T.$L", Route.Method.class, method.toUpperCase(Locale.ROOT))
+				.build())
+			.addMethod(MethodSpec.methodBuilder("rawPath")
+				.addModifiers(Modifier.PUBLIC)
+				.addAnnotation(Override.class)
+				.returns(String.class)
+				.addStatement("return $S", path)
+				.build());
+
+		addBodyMethod(spec);
+
+		for (var parameter : route.getParameters()) {
+			var parameterFieldName = fieldNames.allocateName(parameter.getName());
+			var parameterType = parameterTypes.get(parameter);
+			spec
+				.addField(parameterType, parameterFieldName, Modifier.PRIVATE)
+				.addMethod(MethodSpec.methodBuilder(parameterFieldName)
+					.returns(parameterType)
+					.addModifiers(Modifier.PUBLIC)
+					.addStatement("return this.$L", parameterFieldName)
+					.build());
+			parameterNameToField.put(parameter.getName(), parameterFieldName);
+			allParametersConstructor
+				.addParameter(parameterType, parameterFieldName)
+				.addStatement("this.$L = $L", parameterFieldName, parameterFieldName);
+		}
+
+		addPathMethod(spec);
+
+
+		this.responseParser = MethodSpec.methodBuilder("handleResponseInfo")
+			.addModifiers(Modifier.PUBLIC)
+			.addAnnotation(TypeUtils.buildSuppressWarnings(Stream.of("RedundantSuppression", "SwitchStatementWithTooFewBranches", "EnhancedSwitchMigration", "DuplicateBranchesInSwitch")))
+			.addAnnotation(Override.class)
+			.addParameter(HttpResponse.ResponseInfo.class, "responseInfo")
+			.beginControlFlow("switch (responseInfo.statusCode())");
+
+		for (var entry : route.getResponses().entrySet()) {
+			var statusCode = entry.getKey();
+			var response = entry.getValue();
+			generateErrorResponse(spec, statusCode, response);
+		}
+
+		spec.addMethod(allParametersConstructor.build());
+		spec.addMethod(this.responseParser
+			.addStatement("default: return $T.unknownResponseError(responseInfo)", ResponseHelpers.class)
+			.endControlFlow()
+			.build());
+
 	}
 }

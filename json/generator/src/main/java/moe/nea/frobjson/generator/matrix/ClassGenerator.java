@@ -1,0 +1,74 @@
+package moe.nea.frobjson.generator.matrix;
+
+import com.palantir.javapoet.ClassName;
+import com.palantir.javapoet.ParameterizedTypeName;
+import com.palantir.javapoet.TypeName;
+import com.palantir.javapoet.TypeSpec;
+import moe.nea.frobjson.generator.NameCollection;
+import tools.jackson.databind.JsonNode;
+
+import java.util.List;
+
+public interface ClassGenerator {
+
+	void emitDependencies(NameSpace.ClassNameSpace classNameSpace);
+
+	void writeType(TypeSpec.Builder spec, NameSpace.ClassNameSpace classNameSpace);
+
+	default String guessFieldName(String name, MemberType memberType) {
+		if (name.startsWith("m.")) // TODO: this is matrix specific, add more generic interface
+			name = name.substring(2);
+		return name;
+	}
+
+	default TypeName resolveObjectType(
+		NameSpace context,
+		String nameHint,
+		RawJsonType.ObjectType objectType
+	) {
+		var title = objectType.getTitle();
+		var cns = context.createChild(NameCollection.foldName(title != null ? title : nameHint, NameCollection.NameType.CLASS_NAME));
+		cns.setGenerator(new ObjectTypeGenerator(
+			objectType
+		));
+		return cns.getClassName();
+	}
+
+	default TypeName resolveTypeName(NameSpace context, String nameHint, RawJsonType jsonType) {
+		switch (jsonType) {
+			case RawJsonType.ObjectType objectType -> {
+				return resolveObjectType(context, nameHint, objectType);
+			}
+			case RawJsonType.StringType stringType -> {
+				return ClassName.get(String.class);
+			}
+			case RawJsonType.UnknownType unknownType -> {
+				return ClassName.get(JsonNode.class);
+			}
+			case RawJsonType.BooleanType booleanType -> {
+				return TypeName.BOOLEAN;
+			}
+			case RawJsonType.IntegerType integerType -> {
+				if ("int64".equals(integerType.getFormat()))
+					return TypeName.LONG;
+				return TypeName.INT; // TODO: perhaps long always?
+			}
+			case RawJsonType.ArrayType arrayType -> {
+				// TODO: bind the title and description and such from outside? unsure
+				return ParameterizedTypeName.get(ClassName.get(List.class), resolveTypeName(context, nameHint, arrayType.getItems()));
+			}
+		}
+	}
+
+	default TypeName resolveTypeName(NameSpace context, String nameHint, MemberType memberType) {
+		switch (memberType) {
+			case MemberType.DirectDeclaration directDeclaration -> {
+				var type = directDeclaration.type();
+				return resolveTypeName(context, nameHint, type);
+			}
+			case MemberType.Reference reference -> {
+				return reference.schemaReference().className();
+			}
+		}
+	}
+}

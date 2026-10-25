@@ -1,12 +1,11 @@
 package moe.nea.frobjson.generator.matrix;
 
 import com.palantir.javapoet.ClassName;
-import com.palantir.javapoet.JavaFile;
-import lombok.SneakyThrows;
-import moe.nea.frobjson.generator.NameCollection;
 
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class MatrixGenerator {
@@ -14,6 +13,22 @@ public class MatrixGenerator {
 	private final Path destinationFolder;
 	private final Path extraSchemasRoot;
 	private final String basePackage = "moe.nea.frobmatrix";
+
+	private List<Runnable> queuedTasks = new ArrayList<>();
+
+	public void complete() {
+		while (!queuedTasks.isEmpty()) {
+			var ptr = queuedTasks;
+			queuedTasks = new ArrayList<>();
+			for (var p : ptr) {
+				p.run();
+			}
+		}
+	}
+
+	public void queueTask(Runnable runnable) {
+		queuedTasks.add(runnable);
+	}
 
 	public Path extraSchemasRoot() {
 		return extraSchemasRoot;
@@ -23,10 +38,19 @@ public class MatrixGenerator {
 		return basePackage;
 	}
 
-	private Map<String, NameCollection> classNames = new HashMap<>();
+	private Map<String, NameSpace.PackageNameSpace> nameSpaceMap = new HashMap<>();
 
-	public NameCollection classNamesForPackage(String packageName) {
-		return classNames.computeIfAbsent(packageName, key -> new NameCollection(NameCollection.NameType.CLASS_NAME, true));
+	public NameSpace.PackageNameSpace getPackageNameSpace(String packageName) {
+		return nameSpaceMap.computeIfAbsent(packageName, it -> new NameSpace.PackageNameSpace(this, it));
+	}
+
+	public NameSpace.ClassNameSpace getClassNameSpace(ClassName className) {
+		NameSpace ns = getPackageNameSpace(className.packageName());
+		for (String s : className.simpleNames()) {
+			ns = ns.getExistingChild(s);
+		}
+		assert ns instanceof NameSpace.ClassNameSpace;
+		return (NameSpace.ClassNameSpace) ns;
 	}
 
 	public Path matrixSpecRoot() {
@@ -53,12 +77,15 @@ public class MatrixGenerator {
 		this.extraSchemasRoot = extraSchemasRoot;
 	}
 
-	public ClassName allocateClassName(String packageName, String title) {
-		return ClassName.get(packageName, classNamesForPackage(packageName).allocateName(title));
+	public <T> Lazy<T> pushLazy(Lazy<T> lazy) {
+		queueTask(lazy::get);
+		return lazy;
 	}
 
-	@SneakyThrows
-	public void writeType(JavaFile javaFile) {
-		javaFile.writeTo(destinationFolder);
+	public void writeAll() {
+		complete();
+		for (var pns : nameSpaceMap.values()) {
+			pns.writeTo(this.destinationFolder());
+		}
 	}
 }

@@ -20,6 +20,6 @@ public class MatrixMain {
 		clientServerApi.generateRoutes("registration_tokens.yaml");
 		clientServerApi.generateRoutes("login.yaml");
 //		clientServerApi.generateRoutes("room_summary.yaml");
-		clientServerApi.schemaLibrary().writeFiles();
+		matrixGenerator.writeAll();
 	}
 }

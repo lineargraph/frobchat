@@ -1,15 +1,14 @@
 package moe.nea.frobjson.generator.matrix;
 
 import lombok.extern.slf4j.Slf4j;
+import moe.nea.frobjson.generator.NameCollection;
 
 import java.nio.file.Path;
 
 @Slf4j
 public class ApiGenerator {
 	private final MatrixGenerator matrixGenerator;
-	private final String type;
 	private final SchemaLibrary schemaLibrary;
-	private final Path rootFolder;
 
 	public MatrixGenerator matrixGenerator() {
 		return matrixGenerator;
@@ -19,25 +18,22 @@ public class ApiGenerator {
 		return schemaLibrary;
 	}
 
-	public Path rootFolder() {
-		return rootFolder;
-	}
-
 	public ApiGenerator(MatrixGenerator matrixGenerator, String type) {
 		this.matrixGenerator = matrixGenerator;
-		this.type = type;
-		this.rootFolder = matrixGenerator.dataFolder().resolve("api").resolve(type);
-		this.schemaLibrary = new SchemaLibrary(matrixGenerator,
-			matrixGenerator.basePackage() + ".api." + type.replace("-", ""),
-			rootFolder
+		var prefix = "api/" + type;
+		this.schemaLibrary = new SchemaLibrary(
+			matrixGenerator,
+			prefix
 		);
 	}
 
 	public void generateRoutes(String path) {
-		var rawRoutes = YAMLUtils.readFile(schemaLibrary, rootFolder.resolve(path), RawOpenApiRoutes.class);
-		var packageName = schemaLibrary.rootPackage() + ".routes." + path.replace("-", "").replace(".yaml", "");
-		for (var file : new RoutesGenerator(this, rawRoutes, packageName).generate()) {
-			matrixGenerator.writeType(file);
-		}
+		var rawRoutes = YAMLUtils.readFile(schemaLibrary, schemaLibrary.dataRoot().resolve(path), RawOpenApiRoutes.class);
+		var title = rawRoutes.getInfo().getTitle();
+		var packageName = schemaLibrary.rootPackage() + ".routes." + path.replace("-", "").replace("_", "").replace(".yaml", "");
+		var className = NameCollection.foldName(title/* + " Routes"*/, NameCollection.NameType.CLASS_NAME);
+		matrixGenerator.getPackageNameSpace(packageName)
+			.createChild(className)
+			.setGenerator(new RoutesGenerator(this, rawRoutes, packageName));
 	}
 }

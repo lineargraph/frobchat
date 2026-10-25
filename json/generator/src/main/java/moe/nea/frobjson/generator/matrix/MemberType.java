@@ -1,6 +1,7 @@
 package moe.nea.frobjson.generator.matrix;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import tools.jackson.core.JacksonException;
@@ -52,9 +53,11 @@ public sealed interface MemberType {
 		if (tree.has("allOf")) {
 			// Specifically in the context of this matrix spec this typically is used for extending an object in some way.
 			assert tree.size() == 1;
-			return new MemberType.MergeDefinition(ctxt.readTreeAsValue(tree.get("allOf"),
-				TypeFactory.createDefaultInstance()
-					.constructCollectionLikeType(List.class, MemberType.class)));
+			return new MemberType.MergeDefinition(
+				context.library(),
+				ctxt.readTreeAsValue(tree.get("allOf"),
+					TypeFactory.createDefaultInstance()
+						.constructCollectionLikeType(List.class, MemberType.class)));
 		}
 		if (!tree.has("type"))
 			tree.put("type", "unknown");
@@ -124,7 +127,9 @@ public sealed interface MemberType {
 	}
 
 	@RequiredArgsConstructor
+	@Slf4j
 	final class MergeDefinition implements DirectDeclaration, Unlazyable {
+		private final SchemaLibrary library;
 		private final List<MemberType> definitions;
 		private RawJsonType actual;
 
@@ -136,7 +141,9 @@ public sealed interface MemberType {
 		private RawJsonType getRaw(MemberType type) {
 			return switch (type) {
 				case DirectDeclaration inlineDefinition -> inlineDefinition.type();
-				case Reference reference -> reference.schemaReference().getRawJsonType();
+				case Reference reference ->
+					((ObjectTypeGenerator) reference.schemaReference().classNameSpace().getGenerator())
+						.getType(); // TODO: this is so fucking ugly, i need to add more stuff here
 			};
 		}
 
@@ -146,7 +153,7 @@ public sealed interface MemberType {
 		}
 
 		private MemberType mergeProp(MemberType base, MemberType spec) {
-			var mergeDef = new MergeDefinition(List.of(base, spec));
+			var mergeDef = new MergeDefinition(library, List.of(base, spec));
 			mergeDef.unlazy();
 			return mergeDef;
 		}
@@ -190,6 +197,7 @@ public sealed interface MemberType {
 
 		@Override
 		public void unlazy() {
+			log.warn("Ugly merging definitions: " + definitions);
 			var p = getRaw(definitions.getFirst());
 			if (p instanceof RawJsonType.ObjectType)
 				mergeAll(RawJsonType.ObjectType.class, this::mergeObjectType);

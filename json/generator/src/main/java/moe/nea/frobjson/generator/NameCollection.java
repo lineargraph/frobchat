@@ -37,7 +37,7 @@ public class NameCollection {
 	}
 
 
-	public String foldName(String name) {
+	public static String foldName(String name, NameType nameType) {
 		StringBuilder b = new StringBuilder();
 		for (String s : splitter.split(name)) {
 			if (s.isEmpty()) continue;
@@ -52,7 +52,7 @@ public class NameCollection {
 	}
 
 	public String allocateName(String name) {
-		name = foldName(name);
+		name = foldName(name, nameType);
 		for (int j = 1; ; j++) {
 			var candidate = j <= 1 ? name : name + j;
 			if (names.contains(candidate)) {

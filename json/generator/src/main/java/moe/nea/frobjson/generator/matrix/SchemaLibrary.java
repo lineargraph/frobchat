@@ -1,6 +1,7 @@
 package moe.nea.frobjson.generator.matrix;
 
 import lombok.SneakyThrows;
+import moe.nea.frobjson.generator.NameCollection;
 import tools.jackson.databind.JsonNode;
 
 import java.nio.file.Files;
@@ -12,43 +13,40 @@ import java.util.function.Predicate;
 
 public class SchemaLibrary {
 	private final MatrixGenerator generator;
-	private final String rootPackage;
-	private final Path rootPath;
+	private final String prefix;
 	private final List<Function<MemberType.TypeResolutionContext, MemberType>> memberTypeOverrides = new ArrayList<>();
 
 	public SchemaLibrary(
 		MatrixGenerator generator,
-		String rootPackage,
-		Path rootPath
+		String prefix
 	) {
 		this.generator = generator;
-		this.rootPackage = rootPackage;
-		this.rootPath = rootPath;
+		this.prefix = prefix;
 	}
 
-	private Map<Path, Lazy<SchemaReference>> schemaReferences = new HashMap<>();
+	public String basePackage() {
+		return generator.basePackage() + "." + prefix.replace("-", "").replace("_", "").replace("/", ".");
+	}
+
+	public Path dataRoot() {
+		return generator.dataFolder().resolve(prefix);
+	}
+
+	private final Map<Path, Lazy<SchemaReference>> schemaReferences = new HashMap<>();
 
 	@SneakyThrows
 	private Lazy<SchemaReference> resolveDefinition0(Path relativePath) {
-		return Lazy.of(() -> {
-				var fileName = rootPath.resolve(relativePath);
+		return generator.pushLazy(Lazy.of(() -> {
+				var fileName = dataRoot().resolve(relativePath);
 				var rawDefinition = ((MemberType.DirectDeclaration) YAMLUtils.readFile(this, fileName, MemberType.class))
 					.type();
 				var packageName = packageName(relativePath);
-				return new SchemaReference(
-					this,
-					rawDefinition,
-					generator.allocateClassName(packageName, Objects.requireNonNull(rawDefinition.getTitle()))
-				);
+				var cns = generator.getPackageNameSpace(packageName)
+					.createChild(NameCollection.foldName(Objects.requireNonNull(rawDefinition.getTitle()), NameCollection.NameType.CLASS_NAME));
+				cns.setGenerator(new ObjectTypeGenerator((RawJsonType.ObjectType) rawDefinition));
+				return new SchemaReference(cns);
 			}
-		);
-	}
-
-	public void writeFiles() {
-		for (Lazy<SchemaReference> value : schemaReferences.values()) {
-			var schemaReference = value.get();
-			generator.writeType(schemaReference.generateDefinition());
-		}
+		));
 	}
 
 	@SneakyThrows
@@ -58,12 +56,12 @@ public class SchemaLibrary {
 		assert Files.isDirectory(relativeTo) : "Relative root should be the folder containing the file";
 		var parts = reference.split("#");
 		assert parts.length == 1 : "Nested references not handled yet";
-		var relativePath = rootPath.relativize(relativeTo).resolve(parts[0]);
+		var relativePath = dataRoot().relativize(relativeTo).resolve(parts[0]);
 		return schemaReferences.computeIfAbsent(relativePath, this::resolveDefinition0).get();
 	}
 
 	private String packageName(Path segments) {
-		var packageName = new StringBuilder(rootPackage);
+		var packageName = new StringBuilder(basePackage());
 		for (Path segment : segments) {
 			var segmentName = segment.toString();
 			if (segmentName.endsWith(".yaml"))
@@ -75,8 +73,12 @@ public class SchemaLibrary {
 		return packageName.toString();
 	}
 
-	public Path prefix() {
-		return generator.dataFolder().relativize(rootPath);
+	public String prefix() {
+		return prefix;
+	}
+
+	public Path extraRoot() {
+		return generator.extraSchemasRoot().resolve(prefix);
 	}
 
 	public static class TypeResolutionContextHelper {
@@ -102,7 +104,7 @@ public class SchemaLibrary {
 		}
 
 		public TypeResolutionContextHelper ifPath(String path) {
-			failed = failed || !library().rootPath.relativize(context.context().file())
+			failed = failed || !library().dataRoot().relativize(context.context().file())
 				.toString().equals(path);
 			return this;
 		}
@@ -118,9 +120,7 @@ public class SchemaLibrary {
 
 		public void thenUseExtraSchema(String path) {
 			if (!failed)
-				thenUse(library().generator.extraSchemasRoot()
-					.resolve(library().prefix())
-					.resolve(path));
+				thenUse(library().extraRoot().resolve(path));
 		}
 
 		public void thenUse(Path path) {
@@ -147,7 +147,7 @@ public class SchemaLibrary {
 	}
 
 	public String rootPackage() {
-		return rootPackage;
+		return basePackage();
 	}
 
 	public MemberType resolveOverride(MemberType.TypeResolutionContext typeResolutionContext) {
