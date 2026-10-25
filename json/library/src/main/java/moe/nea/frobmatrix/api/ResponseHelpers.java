@@ -27,6 +27,14 @@ public class ResponseHelpers {
 	public record ContentType(String contentType, Map<String, String> extraInformation) {
 	}
 
+	public static String urlEncodeParameter(String string) {
+		return urlEncodeString(string);
+	}
+
+	public static String urlEncodeParameter(UriParameter parameter) {
+		return urlEncodeString(parameter.asUriParameter());
+	}
+
 	public static String urlEncodeString(String string) {
 		return URLEncoder.encode(string, StandardCharsets.UTF_8);
 	}

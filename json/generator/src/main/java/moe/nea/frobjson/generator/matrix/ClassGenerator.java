@@ -5,8 +5,10 @@ import com.palantir.javapoet.ParameterizedTypeName;
 import com.palantir.javapoet.TypeName;
 import com.palantir.javapoet.TypeSpec;
 import moe.nea.frobjson.generator.NameCollection;
+import moe.nea.frobmatrix.MxUserId;
 import tools.jackson.databind.JsonNode;
 
+import java.net.URI;
 import java.util.List;
 
 public interface ClassGenerator {
@@ -40,7 +42,13 @@ public interface ClassGenerator {
 				return resolveObjectType(context, nameHint, objectType);
 			}
 			case RawJsonType.StringType stringType -> {
-				return ClassName.get(String.class);
+				return switch (stringType.getFormat()) {
+					case "mx-user-id" -> ClassName.get(MxUserId.class);
+					case "mx-server-name" -> ClassName.get(String.class); // TODO: custom server name class
+					case "uri" -> ClassName.get(URI.class);
+					case null -> ClassName.get(String.class);
+					default -> throw new IllegalStateException("Unexpected format: " + stringType.getFormat());
+				};
 			}
 			case RawJsonType.UnknownType unknownType -> {
 				return ClassName.get(JsonNode.class);

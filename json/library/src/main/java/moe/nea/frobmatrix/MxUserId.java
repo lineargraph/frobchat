@@ -1,11 +1,16 @@
 package moe.nea.frobmatrix;
 
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.annotation.JsonValue;
+import moe.nea.frobmatrix.api.UriParameter;
+import org.jspecify.annotations.NonNull;
+
 import java.util.regex.Pattern;
 
 public record MxUserId(
 	String name,
 	String homeserver
-) {
+) implements UriParameter {
 	public static Pattern MX_USER_ID_PATTERN = Pattern.compile("@(.+):(.+)");
 
 	public static MxUserId parse(String mxcId) {
@@ -13,5 +18,16 @@ public record MxUserId(
 		if (matcher.matches())
 			return new MxUserId(matcher.group(1), matcher.group(2));
 		throw new RuntimeException("Failed to parse mx-user-id: " + mxcId);
+	}
+
+	@Override
+	public @NonNull String toString() {
+		return "@" + name + ":" + homeserver;
+	}
+
+	@Override
+	@JsonValue
+	public String asUriParameter() {
+		return toString();
 	}
 }

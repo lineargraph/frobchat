@@ -16,8 +16,8 @@ public class MatrixMain {
 			.thenUseExtraSchema("login.yaml"));
 		clientServerApi.schemaLibrary().override(ctx -> ctx.ifPath("definitions/user_identifier.yaml")
 			.ifTitle("User identifier")
-			.thenUseRelativeClass("definitions.useridentifier.UserIdentifier")
-		);
+			.thenUseRelativeClass("definitions.useridentifier.UserIdentifier"));
+
 		clientServerApi.generateRoutes("wellknown.yaml");
 		clientServerApi.generateRoutes("whoami.yaml");
 		clientServerApi.generateRoutes("admin.yaml");

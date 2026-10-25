@@ -90,7 +90,7 @@ public class RouteGenerator implements ClassGenerator {
 				var skipped = path.substring(lastAppendPosition, pathMatcher.start());
 				if (!skipped.isEmpty())
 					method.addCode("$S + ", skipped);
-				method.addCode("$T.urlEncodeString($L)", ResponseHelpers.class, Objects.requireNonNull(parameterNameToField.get(pathMatcher.group(1))));
+				method.addCode("$T.urlEncodeParameter($L)", ResponseHelpers.class, Objects.requireNonNull(parameterNameToField.get(pathMatcher.group(1))));
 				lastAppendPosition = pathMatcher.end();
 			}
 			var rest = path.substring(lastAppendPosition);
@@ -104,7 +104,7 @@ public class RouteGenerator implements ClassGenerator {
 		boolean hadQ = false;
 		for (var parameter : route.getParameters()) {
 			if (parameter.getIn() != RawOpenApiRoutes.ParameterLocation.QUERY) continue;
-			method.addCode(" + $S + $T.urlEncodeString($L)", (hadQ ? "&" : "?") + ResponseHelpers.urlEncodeString(parameter.getName()) + "=", ResponseHelpers.class, Objects.requireNonNull(parameterNameToField.get(parameter.getName())));
+			method.addCode(" + $S + $T.urlEncodeParameter($L)", (hadQ ? "&" : "?") + ResponseHelpers.urlEncodeString(parameter.getName()) + "=", ResponseHelpers.class, Objects.requireNonNull(parameterNameToField.get(parameter.getName())));
 			hadQ = true;
 		}
 
