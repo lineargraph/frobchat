@@ -48,7 +48,10 @@ public class RouteGenerator implements ClassGenerator {
 
 	private void addBodyMethod(TypeSpec.Builder spec) {
 		if (requestBodyType == null) return;
-		spec.addField(requestBodyType, "requestBody")
+		allParametersConstructor
+			.addParameter(requestBodyType, "requestBody")
+			.addStatement("this.requestBody = requestBody");
+		spec.addField(requestBodyType, "requestBody", Modifier.PRIVATE)
 			.addMethod(MethodSpec.methodBuilder("requestBody")
 				.returns(requestBodyType)
 				.addStatement("return this.requestBody")

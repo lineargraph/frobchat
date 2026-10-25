@@ -55,6 +55,9 @@ public sealed interface MemberType {
 			// Specifically in the context of this matrix spec this typically is used for extending an object in some way.
 			assert tree.size() == 1;
 			var allOfs = tree.get("allOf");
+			if (allOfs.size() == 1) {
+				return ctxt.readTreeAsValue(allOfs.get(0), MemberType.class);
+			}
 			if (allOfs.size() == 2 && allOfs.get(0).size() == 1 && allOfs.get(0).has("$ref") && !allOfs.get(1).has("$ref")) {
 				return new MemberType.ExtendsDefinition(
 					new Reference(

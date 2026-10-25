@@ -58,6 +58,10 @@ public class SchemaLibrary {
 		Path relativeTo,
 		String reference) {
 		assert Files.isDirectory(relativeTo) : "Relative root should be the folder containing the file";
+		if (reference.startsWith("LIBRARY_ROOT/")) {
+			relativeTo = dataRoot();
+			reference = reference.substring("LIBRARY_ROOT/".length());
+		}
 		var parts = reference.split("#");
 		assert parts.length == 1 : "Nested references not handled yet";
 		var relativePath = dataRoot().relativize(relativeTo).resolve(parts[0]);

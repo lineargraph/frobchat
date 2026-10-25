@@ -3,6 +3,7 @@ plugins {
 }
 dependencies {
 	api(projects.json.library)
+	testImplementation(libs.junit)
 }
 
 java.toolchain.languageVersion.set(JavaLanguageVersion.of(21))

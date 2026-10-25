@@ -18,8 +18,7 @@ properties:
             response of the [`GET /login`](/client-server-api/#get_matrixclientv3login)
             endpoint, like `m.login.password` or `m.login.token`.
     identifier:
-        type: string
-        # $ref: definitions/user_identifier.yaml
+        $ref: LIBRARY_ROOT/definitions/user_identifier.yaml
     password:
         type: string
         description: |-
