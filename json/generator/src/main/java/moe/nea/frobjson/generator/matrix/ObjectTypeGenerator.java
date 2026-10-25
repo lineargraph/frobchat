@@ -79,6 +79,12 @@ public class ObjectTypeGenerator implements ClassGenerator {
 				.addStatement("return this.$L", fieldName)
 				.addAnnotations(TypeUtils.deprecatedIf(deprecated))
 				.build());
+			StringBuilder setterName = new StringBuilder("set");
+			NameCollection.capitalize(setterName, fieldName);
+			typeSpec.addMethod(MethodSpec.methodBuilder(setterName.toString())
+				.addParameter(fieldType, fieldName)
+				.addStatement("this.$L = $L", fieldName, fieldName)
+				.build());
 		}
 		typeSpec.addMethod(MethodSpec.methodBuilder("toString")
 			.addAnnotation(Override.class)
