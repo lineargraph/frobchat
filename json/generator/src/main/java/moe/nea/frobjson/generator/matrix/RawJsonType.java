@@ -69,6 +69,8 @@ public sealed abstract class RawJsonType {
 		private @Nullable String pattern;
 		@JsonProperty("enum")
 		private @Nullable List<String> validValues = null;
+		@JsonProperty("const")
+		private @Nullable String constant;
 	}
 
 	@ToString(callSuper = true)

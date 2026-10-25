@@ -53,6 +53,18 @@ public class MatrixGenerator {
 		return (ClassNameSpace) ns;
 	}
 
+	public ClassNameSpace createClassNameSpace(ClassName className) {
+		NameSpace ns = getPackageNameSpace(className.packageName());
+		for (String s : className.simpleNames()) {
+			var nextNs = ns.getExistingChild(s);
+			if (nextNs == null)
+				nextNs = ns.createChild(s);
+			ns = nextNs;
+		}
+		assert ns instanceof ClassNameSpace;
+		return (ClassNameSpace) ns;
+	}
+
 	public Path matrixSpecRoot() {
 		return matrixSpecRoot;
 	}

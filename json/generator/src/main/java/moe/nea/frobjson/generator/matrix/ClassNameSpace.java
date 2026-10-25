@@ -82,6 +82,7 @@ public final class ClassNameSpace extends NameSpace {
 		IN_GENERATION_PHASE = true;
 		assert emitted;
 		assert isTopLevelClass();
+		if (generator instanceof PreExistingGenerator) return;
 		JavaFile.builder(className.packageName(), buildClassRecursively())
 			.indent("\t")
 			.build()

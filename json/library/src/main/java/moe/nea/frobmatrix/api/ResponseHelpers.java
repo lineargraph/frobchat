@@ -1,5 +1,6 @@
 package moe.nea.frobmatrix.api;
 
+import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -81,6 +82,10 @@ public class ResponseHelpers {
 		{
 			throw new RuntimeException("Received error: " + response);
 		});
+	}
+
+	public static JsonNode toJsonValue(Object object) {
+		return MAPPER.valueToTree(object);
 	}
 
 	public static <T> HttpResponse.BodySubscriber<T> parseJson(

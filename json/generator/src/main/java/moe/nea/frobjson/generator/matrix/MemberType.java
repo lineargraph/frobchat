@@ -1,5 +1,6 @@
 package moe.nea.frobjson.generator.matrix;
 
+import com.palantir.javapoet.ClassName;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -45,7 +46,7 @@ public sealed interface MemberType {
 		if (override != null) return override;
 		if (tree.has("$ref")) {
 			assert tree.size() == 1;
-			return new Reference(
+			return new FileReference(
 				context.library(),
 				context.folder(),
 				tree.get("$ref").asString()
@@ -60,7 +61,7 @@ public sealed interface MemberType {
 			}
 			if (allOfs.size() == 2 && allOfs.get(0).size() == 1 && allOfs.get(0).has("$ref") && !allOfs.get(1).has("$ref")) {
 				return new MemberType.ExtendsDefinition(
-					new Reference(
+					new FileReference(
 						context.library(),
 						context.folder(),
 						allOfs.get(0).get("$ref").asString()
@@ -128,13 +129,37 @@ public sealed interface MemberType {
 		}
 	}
 
+	sealed interface Reference extends MemberType {
+		SchemaReference schemaReference();
+	}
+
 	@RequiredArgsConstructor
-	final class Reference implements MemberType, Unlazyable {
+	final class ClassReference implements Reference, Unlazyable {
+		final SchemaLibrary library;
+		final ClassName className;
+		SchemaReference schemaReference;
+
+		@Override
+		public SchemaReference schemaReference() {
+			return schemaReference;
+		}
+
+		@Override
+		public void unlazy() {
+			var cns = library.matrixGenerator().createClassNameSpace(className);
+			cns.setGenerator(new PreExistingGenerator());
+			schemaReference = new SchemaReference(cns);
+		}
+	}
+
+	@RequiredArgsConstructor
+	final class FileReference implements Reference, Unlazyable {
 		private final SchemaLibrary schemaLibrary;
 		private final Path relativeTo;
 		private final String reference;
 		private SchemaReference schemaReference = null;
 
+		@Override
 		public SchemaReference schemaReference() {
 			return schemaReference;
 		}
@@ -232,7 +257,8 @@ public sealed interface MemberType {
 					mergeCommon(new RawJsonType.StringType(
 						mergeNulls(base.getFormat(), spec.getFormat()),
 						mergeNulls(base.getPattern(), spec.getPattern()),
-						mergeNulls(base.getValidValues(), spec.getValidValues()) // TODO: technically this would be an intersection?
+						mergeNulls(base.getValidValues(), spec.getValidValues()), // TODO: technically this would be an intersection?
+						mergeNulls(base.getConstant(), spec.getConstant())
 					), base, spec));
 
 			else throw new RuntimeException("Cannot merge " + p);
@@ -240,7 +266,7 @@ public sealed interface MemberType {
 	}
 
 	final class ExtendsDefinition implements NonReference, Unlazyable {
-		private final Reference reference;
+		private final FileReference reference;
 		@Getter
 		private final RawJsonType.ObjectType overrides;
 
@@ -249,7 +275,7 @@ public sealed interface MemberType {
 			return reference.schemaReference();
 		}
 
-		public ExtendsDefinition(Reference reference, RawJsonType.ObjectType overrides) {
+		public ExtendsDefinition(FileReference reference, RawJsonType.ObjectType overrides) {
 			this.reference = reference;
 			this.overrides = overrides;
 		}

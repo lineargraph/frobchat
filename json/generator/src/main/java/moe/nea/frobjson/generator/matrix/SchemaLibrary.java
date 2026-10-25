@@ -1,5 +1,6 @@
 package moe.nea.frobjson.generator.matrix;
 
+import com.palantir.javapoet.ClassName;
 import lombok.SneakyThrows;
 import moe.nea.frobjson.generator.NameCollection;
 import tools.jackson.databind.JsonNode;
@@ -15,6 +16,10 @@ public class SchemaLibrary {
 	private final MatrixGenerator generator;
 	private final String prefix;
 	private final List<Function<MemberType.TypeResolutionContext, MemberType>> memberTypeOverrides = new ArrayList<>();
+
+	public MatrixGenerator matrixGenerator() {
+		return generator;
+	}
 
 	public SchemaLibrary(
 		MatrixGenerator generator,
@@ -38,17 +43,26 @@ public class SchemaLibrary {
 	private Lazy<SchemaReference> resolveDefinition0(Path relativePath) {
 		return generator.pushLazy(Lazy.of(() -> {
 				var fileName = dataRoot().resolve(relativePath);
-				var rawDefinition = ((MemberType.NonReference) YAMLUtils.readFile(this, fileName, MemberType.class));
-				var packageName = packageName(relativePath);
-				var cns = generator.getPackageNameSpace(packageName)
-					.createChild(NameCollection.foldName(Objects.requireNonNull(rawDefinition.guessTitle()), NameCollection.NameType.CLASS_NAME));
-				switch (rawDefinition) {
-					case MemberType.DirectDeclaration directDeclaration ->
-						cns.setGenerator(new ObjectTypeGenerator((RawJsonType.ObjectType) directDeclaration.type()));
-					case MemberType.ExtendsDefinition extendsDefinition ->
-						cns.setGenerator(new ExtendsTypeGenerator(extendsDefinition.getParent(), extendsDefinition.getOverrides()));
+				switch (YAMLUtils.readFile(this, fileName, MemberType.class)) {
+					case MemberType.NonReference rawDefinition -> {
+						var packageName = packageName(relativePath);
+						var cns = generator.getPackageNameSpace(packageName)
+							.createChild(NameCollection.foldName(Objects.requireNonNull(rawDefinition.guessTitle()), NameCollection.NameType.CLASS_NAME));
+						switch (rawDefinition) {
+							case MemberType.DirectDeclaration directDeclaration ->
+								cns.setGenerator(new ObjectTypeGenerator((RawJsonType.ObjectType) directDeclaration.type()));
+							case MemberType.ExtendsDefinition extendsDefinition ->
+								cns.setGenerator(new ExtendsTypeGenerator(extendsDefinition.getParent(), extendsDefinition.getOverrides()));
+						}
+						return new SchemaReference(cns);
+					}
+					case MemberType.ClassReference reference -> {
+						return reference.schemaReference();
+					}
+					case MemberType.FileReference reference -> {
+						throw new RuntimeException("Recursive references shall not be tolerated at " + relativePath);
+					}
 				}
-				return new SchemaReference(cns);
 			}
 		));
 	}
@@ -143,6 +157,16 @@ public class SchemaLibrary {
 		public MemberType result() {
 			if (failed) return null;
 			return memberType;
+		}
+
+		public void thenUseClass(String className) {
+			if (!failed)
+				thenUse(new MemberType.ClassReference(library(), ClassName.bestGuess(className)));
+		}
+
+		public void thenUseRelativeClass(String relativeClassName) {
+			if (!failed)
+				thenUseClass(library().basePackage() + "." + relativeClassName);
 		}
 	}
 

@@ -4,6 +4,7 @@ plugins {
 dependencies {
 	api(projects.json.library)
 	testImplementation(libs.junit)
+	testImplementation(libs.hamcrest)
 	testRuntimeOnly(libs.junit.platform)
 }
 
