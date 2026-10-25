@@ -34,6 +34,6 @@ public class ApiGenerator {
 		var className = NameCollection.foldName(title/* + " Routes"*/, NameCollection.NameType.CLASS_NAME);
 		matrixGenerator.getPackageNameSpace(packageName)
 			.createChild(className)
-			.setGenerator(new RoutesGenerator(this, rawRoutes, packageName));
+			.setGenerator(new RoutesGenerator(rawRoutes, packageName));
 	}
 }

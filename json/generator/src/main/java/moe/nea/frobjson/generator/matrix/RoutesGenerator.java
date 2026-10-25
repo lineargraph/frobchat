@@ -4,12 +4,10 @@ import com.palantir.javapoet.TypeSpec;
 import moe.nea.frobjson.generator.NameCollection;
 
 public class RoutesGenerator implements ClassGenerator {
-	final ApiGenerator generator;
 	final RawOpenApiRoutes routes;
 	final String packageName;
 
-	public RoutesGenerator(ApiGenerator generator, RawOpenApiRoutes routes, String packageName) {
-		this.generator = generator;
+	public RoutesGenerator(RawOpenApiRoutes routes, String packageName) {
 		this.routes = routes;
 		this.packageName = packageName;
 	}
