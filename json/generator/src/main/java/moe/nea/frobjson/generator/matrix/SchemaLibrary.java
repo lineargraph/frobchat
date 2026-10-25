@@ -11,6 +11,7 @@ import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 public class SchemaLibrary {
 	private final MatrixGenerator generator;
@@ -39,29 +40,44 @@ public class SchemaLibrary {
 
 	private final Map<Path, Lazy<SchemaReference>> schemaReferences = new HashMap<>();
 
+	private SchemaReference coerceMemberTypeToSchemaReference(
+		MemberType memberType,
+		Path relativePath
+	) {
+		switch (memberType) {
+			case MemberType.NonReference rawDefinition -> {
+				var packageName = packageName(relativePath);
+				var cns = generator.getPackageNameSpace(packageName)
+					.createChild(NameCollection.foldName(Objects.requireNonNull(rawDefinition.guessTitle(), () -> "cannot find name of " + rawDefinition), NameCollection.NameType.CLASS_NAME));
+				switch (rawDefinition) {
+					case MemberType.DirectDeclaration directDeclaration ->
+						cns.setGenerator(new ObjectTypeGenerator((RawJsonType.ObjectType) directDeclaration.type()));
+					case MemberType.ExtendsDefinition extendsDefinition ->
+						cns.setGenerator(new ExtendsTypeGenerator(extendsDefinition.getParent(), extendsDefinition.getOverrides()));
+				}
+				return new SchemaReference(cns);
+			}
+			case MemberType.ClassReference reference -> {
+				return reference.schemaReference();
+			}
+			case MemberType.FileReference reference ->
+				throw new RuntimeException("Recursive references shall not be tolerated");
+			case MemberType.EitherType eitherType ->
+				throw new RuntimeException("Either type definition shall not be tolerated");
+			case MemberType.DelegatingType delegatingType -> {
+				return coerceMemberTypeToSchemaReference(delegatingType.delegate(), relativePath);
+			}
+		}
+	}
+
 	@SneakyThrows
 	private Lazy<SchemaReference> resolveDefinition0(Path relativePath) {
 		return generator.pushLazy(Lazy.of(() -> {
-				var fileName = dataRoot().resolve(relativePath);
-				switch (YAMLUtils.readFile(this, fileName, MemberType.class)) {
-					case MemberType.NonReference rawDefinition -> {
-						var packageName = packageName(relativePath);
-						var cns = generator.getPackageNameSpace(packageName)
-							.createChild(NameCollection.foldName(Objects.requireNonNull(rawDefinition.guessTitle()), NameCollection.NameType.CLASS_NAME));
-						switch (rawDefinition) {
-							case MemberType.DirectDeclaration directDeclaration ->
-								cns.setGenerator(new ObjectTypeGenerator((RawJsonType.ObjectType) directDeclaration.type()));
-							case MemberType.ExtendsDefinition extendsDefinition ->
-								cns.setGenerator(new ExtendsTypeGenerator(extendsDefinition.getParent(), extendsDefinition.getOverrides()));
-						}
-						return new SchemaReference(cns);
-					}
-					case MemberType.ClassReference reference -> {
-						return reference.schemaReference();
-					}
-					case MemberType.FileReference reference -> {
-						throw new RuntimeException("Recursive references shall not be tolerated at " + relativePath);
-					}
+				try {
+					var fileName = dataRoot().resolve(relativePath);
+					return coerceMemberTypeToSchemaReference(YAMLUtils.readFile(this, fileName, MemberType.class), relativePath);
+				} catch (Exception e) {
+					throw new RuntimeException("While reading schema definition from " + relativePath, e);
 				}
 			}
 		));
@@ -152,6 +168,11 @@ public class SchemaLibrary {
 
 		public void thenUse(MemberType memberType) {
 			this.memberType = memberType;
+		}
+
+		public void thenUse(Supplier<MemberType> memberType) {
+			if (!failed)
+				this.memberType = memberType.get();
 		}
 
 		public MemberType result() {

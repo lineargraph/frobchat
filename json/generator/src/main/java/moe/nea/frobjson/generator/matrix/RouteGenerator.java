@@ -104,7 +104,12 @@ public class RouteGenerator implements ClassGenerator {
 		boolean hadQ = false;
 		for (var parameter : route.getParameters()) {
 			if (parameter.getIn() != RawOpenApiRoutes.ParameterLocation.QUERY) continue;
-			method.addCode(" + $S + $T.urlEncodeParameter($L)", (hadQ ? "&" : "?") + ResponseHelpers.urlEncodeString(parameter.getName()) + "=", ResponseHelpers.class, Objects.requireNonNull(parameterNameToField.get(parameter.getName())));
+			method.addCode(
+				" + $S + $T.urlEncodeNamedParameter($S, $L)",
+				(hadQ ? "&" : "?"),
+				ResponseHelpers.class,
+				parameter.getName(),
+				Objects.requireNonNull(parameterNameToField.get(parameter.getName())));
 			hadQ = true;
 		}
 

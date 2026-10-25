@@ -23,6 +23,10 @@ public class YAMLUtils {
 		SchemaLibrary library,
 		List<Unlazyable> unlazyables
 	) {
+		public FolderContext {
+			Objects.requireNonNull(library);
+		}
+
 		public Path folder() {
 			return file.getParent();
 		}

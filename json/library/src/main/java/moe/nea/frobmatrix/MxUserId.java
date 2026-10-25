@@ -1,6 +1,5 @@
 package moe.nea.frobmatrix;
 
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonValue;
 import moe.nea.frobmatrix.api.UriParameter;
 import org.jspecify.annotations.NonNull;
@@ -21,13 +20,8 @@ public record MxUserId(
 	}
 
 	@Override
-	public @NonNull String toString() {
-		return "@" + name + ":" + homeserver;
-	}
-
-	@Override
 	@JsonValue
 	public String asUriParameter() {
-		return toString();
+		return "@" + name + ":" + homeserver;
 	}
 }

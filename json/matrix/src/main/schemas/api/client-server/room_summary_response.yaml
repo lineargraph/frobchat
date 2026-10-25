@@ -1,0 +1,17 @@
+description: A summary of the room.
+allOf:
+    -   $ref: LIBRARY_ROOT/definitions/room_summary.yaml
+    -   type: object
+        title: RoomSummaryWithMembership
+        properties:
+            membership:
+                description: |-
+                    The membership state of the user if the user is joined to the room. Absent
+                    if the API was called unauthenticated.
+                enum:
+                    - invite
+                    - join
+                    - knock
+                    - leave
+                    - ban
+                type: string

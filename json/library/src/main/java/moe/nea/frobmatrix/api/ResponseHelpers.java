@@ -1,5 +1,7 @@
 package moe.nea.frobmatrix.api;
 
+import moe.nea.frobmatrix.Either;
+import moe.nea.frobmatrix.StringUriParameter;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.json.JsonMapper;
@@ -13,9 +15,8 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
-import java.util.Locale;
-import java.util.Map;
+import java.util.*;
+import java.util.function.Function;
 
 public class ResponseHelpers {
 	private final static ObjectMapper MAPPER = new JsonMapper();
@@ -33,6 +34,31 @@ public class ResponseHelpers {
 
 	public static String urlEncodeParameter(UriParameter parameter) {
 		return urlEncodeString(parameter.asUriParameter());
+	}
+
+	public static String urlEncodeParameter(Either<? extends UriParameter, ? extends UriParameter> parameter) {
+		return urlEncodeString(parameter.choose(UriParameter::asUriParameter, UriParameter::asUriParameter));
+	}
+
+	public static String urlEncodeNamedParameter(String name, String value) {
+		return urlEncodeNamedParameter(name, new StringUriParameter(value));
+	}
+
+	public static String urlEncodeNamedParameter(String name, List<String> values) {
+		var stringBuilder = new StringBuilder();
+		for (var value : values) {
+			if (!stringBuilder.isEmpty())
+				stringBuilder.append("&");
+			stringBuilder
+				.append(urlEncodeString(name))
+				.append("=")
+				.append(urlEncodeParameter(value));
+		}
+		return stringBuilder.toString();
+	}
+
+	public static String urlEncodeNamedParameter(String name, UriParameter value) {
+		return urlEncodeString(name) + "=" + urlEncodeParameter(value.asUriParameter());
 	}
 
 	public static String urlEncodeString(String string) {

@@ -5,6 +5,9 @@ import com.palantir.javapoet.ParameterizedTypeName;
 import com.palantir.javapoet.TypeName;
 import com.palantir.javapoet.TypeSpec;
 import moe.nea.frobjson.generator.NameCollection;
+import moe.nea.frobmatrix.Either;
+import moe.nea.frobmatrix.MxRoomAlias;
+import moe.nea.frobmatrix.MxRoomId;
 import moe.nea.frobmatrix.MxUserId;
 import tools.jackson.databind.JsonNode;
 
@@ -43,6 +46,8 @@ public interface ClassGenerator {
 			}
 			case RawJsonType.StringType stringType -> {
 				return switch (stringType.getFormat()) {
+					case "mx-room-alias" -> ClassName.get(MxRoomAlias.class);
+					case "mx-room-id" -> ClassName.get(MxRoomId.class);
 					case "mx-user-id" -> ClassName.get(MxUserId.class);
 					case "mx-server-name" -> ClassName.get(String.class); // TODO: custom server name class
 					case "uri" -> ClassName.get(URI.class);
@@ -75,10 +80,20 @@ public interface ClassGenerator {
 				return resolveTypeName(context, nameHint, type);
 			}
 			case MemberType.Reference reference -> {
-				return reference.schemaReference().className();
+				return reference.schemaReference().typeName();
 			}
 			case MemberType.ExtendsDefinition extendsDefinition -> {
 				return resolveExtendsType(context, nameHint, extendsDefinition);
+			}
+			case MemberType.EitherType eitherType -> {
+				return ParameterizedTypeName.get(
+					ClassName.get(Either.class),
+					resolveTypeName(context, nameHint, eitherType.getLeft()),
+					resolveTypeName(context, nameHint, eitherType.getRight())
+				);
+			}
+			case MemberType.DelegatingType delegatingType -> {
+				return resolveTypeName(context, nameHint, delegatingType.delegate());
 			}
 		}
 	}

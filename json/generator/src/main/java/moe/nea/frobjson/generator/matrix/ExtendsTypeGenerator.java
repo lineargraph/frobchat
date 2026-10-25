@@ -16,7 +16,7 @@ public class ExtendsTypeGenerator extends ObjectTypeGenerator {
 		super(overrides);
 		this.parent = parent;
 		this.overrides = overrides;
-		this.parentGenerator = Objects.requireNonNull((ObjectTypeGenerator) parent.classNameSpace().getGenerator());
+		this.parentGenerator = Objects.requireNonNull((ObjectTypeGenerator) parent.tryGetClassNameSpace().getGenerator());
 		this.allProperties = new ArrayList<>();
 		for (var parentProperty : parentGenerator.getAllProperties()) {
 			this.allProperties.add(parentProperty);
@@ -38,7 +38,7 @@ public class ExtendsTypeGenerator extends ObjectTypeGenerator {
 
 	@Override
 	public void writeType(TypeSpec.Builder spec, ClassNameSpace classNameSpace) {
-		spec.superclass(parent.className());
+		spec.superclass(parent.typeName());
 		super.writeType(spec, classNameSpace);
 	}
 }

@@ -1,9 +1,11 @@
 package moe.nea.frobjson.generator.matrix;
 
 import com.palantir.javapoet.ClassName;
+import com.palantir.javapoet.ParameterizedTypeName;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import moe.nea.frobmatrix.Either;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import tools.jackson.core.JacksonException;
@@ -52,6 +54,16 @@ public sealed interface MemberType {
 				tree.get("$ref").asString()
 			);
 		}
+		if (tree.has("oneOf")) {
+			var oneOfs = tree.get("oneOf");
+			if (oneOfs.size() == 2) {
+				return new MemberType.EitherType(
+					context.library(),
+					ctxt.readTreeAsValue(oneOfs.get(0), MemberType.class),
+					ctxt.readTreeAsValue(oneOfs.get(1), MemberType.class)
+				);
+			}
+		}
 		if (tree.has("allOf")) {
 			// Specifically in the context of this matrix spec this typically is used for extending an object in some way.
 			assert tree.size() == 1;
@@ -61,6 +73,7 @@ public sealed interface MemberType {
 			}
 			if (allOfs.size() == 2 && allOfs.get(0).size() == 1 && allOfs.get(0).has("$ref") && !allOfs.get(1).has("$ref")) {
 				return new MemberType.ExtendsDefinition(
+					tree.has("title") ? tree.get("title").asString() : null,
 					new FileReference(
 						context.library(),
 						context.folder(),
@@ -112,20 +125,25 @@ public sealed interface MemberType {
 		}
 	}
 
+	sealed interface DelegatingType extends MemberType {
+		MemberType delegate();
+	}
+
 	@RequiredArgsConstructor
-	final class TypeOverride implements DirectDeclaration, Unlazyable {
+	final class TypeOverride implements DelegatingType, Unlazyable {
 		final Path path;
 		final SchemaLibrary schemaLibrary;
-		RawJsonType type;
+
+		MemberType delegate;
 
 		@Override
-		public RawJsonType type() {
-			return type;
+		public MemberType delegate() {
+			return delegate;
 		}
 
 		@Override
 		public void unlazy() {
-			type = YAMLUtils.readFile(schemaLibrary, path, RawJsonType.class);
+			delegate = YAMLUtils.readFile(schemaLibrary, path, MemberType.class);
 		}
 	}
 
@@ -189,12 +207,15 @@ public sealed interface MemberType {
 
 		private RawJsonType getRaw(MemberType type) {
 			return switch (type) {
+				case DelegatingType delegatingType -> getRaw(delegatingType.delegate());
 				case DirectDeclaration inlineDefinition -> inlineDefinition.type();
 				case Reference reference ->
-					((ObjectTypeGenerator) reference.schemaReference().classNameSpace().getGenerator())
+					((ObjectTypeGenerator) reference.schemaReference().tryGetClassNameSpace().getGenerator())
 						.getType(); // TODO: this is so fucking ugly, i need to add more stuff here
 				case ExtendsDefinition ignored ->
 					throw new RuntimeException("Intrusive merge not compatible with extends definition merge");
+				case EitherType eitherType ->
+					throw new RuntimeException("Intrusive merge not compatible with eitherType");
 			};
 		}
 
@@ -266,6 +287,7 @@ public sealed interface MemberType {
 	}
 
 	final class ExtendsDefinition implements NonReference, Unlazyable {
+		private final String title;
 		private final FileReference reference;
 		@Getter
 		private final RawJsonType.ObjectType overrides;
@@ -275,7 +297,8 @@ public sealed interface MemberType {
 			return reference.schemaReference();
 		}
 
-		public ExtendsDefinition(FileReference reference, RawJsonType.ObjectType overrides) {
+		public ExtendsDefinition(String title, FileReference reference, RawJsonType.ObjectType overrides) {
+			this.title = title;
 			this.reference = reference;
 			this.overrides = overrides;
 		}
@@ -287,7 +310,32 @@ public sealed interface MemberType {
 
 		@Override
 		public String guessTitle() {
+			if (title != null) return title;
 			return overrides.getTitle();
+		}
+
+		@Override
+		public String toString() {
+			return "ExtendsDefinition(" + overrides + " extends " + reference + ")";
+		}
+	}
+
+	final class EitherType implements MemberType, Unlazyable {
+		private final SchemaLibrary library;
+		@Getter
+		private final MemberType left;
+		@Getter
+		private final MemberType right;
+		private SchemaReference schemaReference;
+
+		public EitherType(SchemaLibrary library, MemberType left, MemberType right) {
+			this.library = library;
+			this.left = left;
+			this.right = right;
+		}
+
+		@Override
+		public void unlazy() {
 		}
 	}
 }
