@@ -69,6 +69,20 @@ public interface ClassGenerator {
 			case MemberType.Reference reference -> {
 				return reference.schemaReference().className();
 			}
+			case MemberType.ExtendsDefinition extendsDefinition -> {
+				return resolveExtendsType(context, nameHint, extendsDefinition);
+			}
 		}
+	}
+
+	default TypeName resolveExtendsType(
+		NameSpace context,
+		String nameHint,
+		MemberType.ExtendsDefinition extendsDefinition
+	) {
+		var title = extendsDefinition.guessTitle();
+		var cns = context.createChild(NameCollection.foldName(title != null ? title : nameHint, NameCollection.NameType.CLASS_NAME));
+		cns.setGenerator(new ExtendsTypeGenerator(extendsDefinition.getParent(), extendsDefinition.getOverrides()));
+		return cns.getClassName();
 	}
 }

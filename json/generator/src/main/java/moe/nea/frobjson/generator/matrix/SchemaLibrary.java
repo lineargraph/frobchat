@@ -38,12 +38,16 @@ public class SchemaLibrary {
 	private Lazy<SchemaReference> resolveDefinition0(Path relativePath) {
 		return generator.pushLazy(Lazy.of(() -> {
 				var fileName = dataRoot().resolve(relativePath);
-				var rawDefinition = ((MemberType.DirectDeclaration) YAMLUtils.readFile(this, fileName, MemberType.class))
-					.type();
+				var rawDefinition = ((MemberType.NonReference) YAMLUtils.readFile(this, fileName, MemberType.class));
 				var packageName = packageName(relativePath);
 				var cns = generator.getPackageNameSpace(packageName)
-					.createChild(NameCollection.foldName(Objects.requireNonNull(rawDefinition.getTitle()), NameCollection.NameType.CLASS_NAME));
-				cns.setGenerator(new ObjectTypeGenerator((RawJsonType.ObjectType) rawDefinition));
+					.createChild(NameCollection.foldName(Objects.requireNonNull(rawDefinition.guessTitle()), NameCollection.NameType.CLASS_NAME));
+				switch (rawDefinition) {
+					case MemberType.DirectDeclaration directDeclaration ->
+						cns.setGenerator(new ObjectTypeGenerator((RawJsonType.ObjectType) directDeclaration.type()));
+					case MemberType.ExtendsDefinition extendsDefinition ->
+						cns.setGenerator(new ExtendsTypeGenerator(extendsDefinition.getParent(), extendsDefinition.getOverrides()));
+				}
 				return new SchemaReference(cns);
 			}
 		));

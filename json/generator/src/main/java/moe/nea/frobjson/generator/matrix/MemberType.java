@@ -1,5 +1,6 @@
 package moe.nea.frobjson.generator.matrix;
 
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NonNull;
@@ -53,6 +54,17 @@ public sealed interface MemberType {
 		if (tree.has("allOf")) {
 			// Specifically in the context of this matrix spec this typically is used for extending an object in some way.
 			assert tree.size() == 1;
+			var allOfs = tree.get("allOf");
+			if (allOfs.size() == 2 && allOfs.get(0).size() == 1 && allOfs.get(0).has("$ref") && !allOfs.get(1).has("$ref")) {
+				return new MemberType.ExtendsDefinition(
+					new Reference(
+						context.library(),
+						context.folder(),
+						allOfs.get(0).get("$ref").asString()
+					),
+					(RawJsonType.ObjectType) ctxt.readTreeAsValue(allOfs.get(1), RawJsonType.class)
+				);
+			}
 			return new MemberType.MergeDefinition(
 				context.library(),
 				ctxt.readTreeAsValue(tree.get("allOf"),
@@ -76,8 +88,17 @@ public sealed interface MemberType {
 		})
 	);
 
-	sealed interface DirectDeclaration extends MemberType {
+	sealed interface NonReference extends MemberType {
+		String guessTitle();
+	}
+
+	sealed interface DirectDeclaration extends NonReference {
 		RawJsonType type();
+
+		@Override
+		default String guessTitle() {
+			return type().getTitle();
+		}
 	}
 
 	record InlineDefinition(RawJsonType type) implements DirectDeclaration {
@@ -144,6 +165,8 @@ public sealed interface MemberType {
 				case Reference reference ->
 					((ObjectTypeGenerator) reference.schemaReference().classNameSpace().getGenerator())
 						.getType(); // TODO: this is so fucking ugly, i need to add more stuff here
+				case ExtendsDefinition ignored ->
+					throw new RuntimeException("Intrusive merge not compatible with extends definition merge");
 			};
 		}
 
@@ -210,6 +233,32 @@ public sealed interface MemberType {
 					), base, spec));
 
 			else throw new RuntimeException("Cannot merge " + p);
+		}
+	}
+
+	final class ExtendsDefinition implements NonReference, Unlazyable {
+		private final Reference reference;
+		@Getter
+		private final RawJsonType.ObjectType overrides;
+
+
+		public SchemaReference getParent() {
+			return reference.schemaReference();
+		}
+
+		public ExtendsDefinition(Reference reference, RawJsonType.ObjectType overrides) {
+			this.reference = reference;
+			this.overrides = overrides;
+		}
+
+		@Override
+		public void unlazy() {
+			reference.unlazy();
+		}
+
+		@Override
+		public String guessTitle() {
+			return overrides.getTitle();
 		}
 	}
 }
