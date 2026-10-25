@@ -3,71 +3,81 @@ package moe.nea.frobjson.generator.matrix;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.palantir.javapoet.*;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 import moe.nea.frobjson.generator.NameCollection;
 import moe.nea.frobjson.generator.TypeUtils;
 
 import javax.lang.model.element.Modifier;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.List;
 
 public class ObjectTypeGenerator implements ClassGenerator {
 	@Getter
 	private final RawJsonType.ObjectType type;
-
-	// Type resolution data
-	private final Map<String, TypeName> propertyTypes = new HashMap<>();
+	@Getter
+	private final List<Property> ownedProperties;
 
 	public ObjectTypeGenerator(RawJsonType.ObjectType type) {
 		this.type = type;
+		ownedProperties = type.getProperties().entrySet().stream()
+			.map(entry ->
+				new Property(
+					entry.getKey(),
+					NameCollection.foldName(guessFieldName(entry.getKey(), entry.getValue()), NameCollection.NameType.FIELD_NAME),
+					entry.getValue(),
+					type.getRequired().contains(entry.getKey()))
+			)
+			.toList();
 	}
 
+	@Getter
+	@RequiredArgsConstructor
+	public static class Property {
+		final String name;
+		final String fieldName;
+		final MemberType memberType;
+		final boolean required;
+		@Setter
+		TypeName renderedTypeName;
+	}
 
 	@Override
 	public void emitDependencies(NameSpace.ClassNameSpace classNameSpace) {
-		for (var entry : type.getProperties().entrySet()) {
-			var name = entry.getKey();
-			var memberType = entry.getValue();
-			propertyTypes.put(name, resolveTypeName(classNameSpace, name, memberType));
+		for (var property : getOwnedProperties()) {
+			property.setRenderedTypeName(
+				resolveTypeName(classNameSpace, property.getName(), property.getMemberType())
+			);
 		}
 	}
 
 	@Override
 	public void writeType(TypeSpec.Builder typeSpec, NameSpace.ClassNameSpace classNameSpace) {
-		typeSpec.addModifiers(Modifier.PUBLIC, Modifier.FINAL);
+		typeSpec.addModifiers(Modifier.PUBLIC);
 		if (type.isDeprecated())
 			typeSpec.addAnnotation(Deprecated.class);
-		var nameCollection = new NameCollection(NameCollection.NameType.FIELD_NAME, true);
 		var constructor = MethodSpec.constructorBuilder()
 			.addModifiers(Modifier.PUBLIC);
 		var requiredConstructor = MethodSpec.constructorBuilder()
 			.addModifiers(Modifier.PUBLIC);
-		var toString = CodeBlock.builder()
-			.add("$S", String.join(".", classNameSpace.getClassName().simpleNames()) + " [");
-		boolean isFirstProperty = true;
+
 		boolean anyNonRequired = false;
-		for (var entry : type.getProperties().entrySet()) {
-			var key = entry.getKey();
-			var value = entry.getValue();
-			var fieldName = nameCollection.allocateName(guessFieldName(key, value));
-			var deprecated = value instanceof MemberType.DirectDeclaration decl && decl.type().isDeprecated();
-			var fieldType = propertyTypes.get(key);
-			var fieldSpec = (FieldSpec.builder(fieldType, fieldName, Modifier.PRIVATE))
+		for (var property : getOwnedProperties()) {
+			var deprecated = property.getMemberType() instanceof MemberType.DirectDeclaration decl
+				&& decl.type().isDeprecated();
+			var fieldType = property.getRenderedTypeName();
+			var fieldName = property.getFieldName();
+			var fieldSpec = FieldSpec.builder(fieldType, fieldName, Modifier.PRIVATE)
 				.addAnnotations(TypeUtils.deprecatedIf(deprecated));
 			var jsonPropertySpec = AnnotationSpec.builder(JsonProperty.class);
-			if (!fieldName.equals(key)) {
-				jsonPropertySpec.addMember("value", "$S", key);
+			if (!fieldName.equals(property.getName())) {
+				jsonPropertySpec.addMember("value", "$S", property.getName());
 			}
-			if (type.getRequired().contains(key)) {
+			if (property.isRequired()) {
 				jsonPropertySpec.addMember("required", "true");
 				requiredConstructor.addParameter(fieldType, fieldName)
 					.addStatement("this.$L = $L", fieldName, fieldName);
 			} else {
 				anyNonRequired = true;
-			}
-			if (isFirstProperty) {
-				toString.add(" + $S + this.$L", " " + key + " = ", fieldName);
-			} else {
-				toString.add(" + $S + this.$L", ", " + key + " = ", fieldName);
 			}
 			constructor.addParameter(fieldType, fieldName)
 				.addStatement("this.$L = $L", fieldName, fieldName);
@@ -79,9 +89,16 @@ public class ObjectTypeGenerator implements ClassGenerator {
 				.addStatement("return this.$L", fieldName)
 				.addAnnotations(TypeUtils.deprecatedIf(deprecated))
 				.build());
-			isFirstProperty = false;
+
 		}
-		toString.add("+ $S", " ]");
+		var toString = CodeBlock.builder()
+			.add("$S + ", String.join(".", classNameSpace.getClassName().simpleNames()) + " [ ")
+			.add(getOwnedProperties()
+				.stream()
+				.map(it -> CodeBlock.of("$S + $L", it.getName() + " = ", it.getFieldName()))
+				.collect(CodeBlock.joining(" + \", \" + ")));
+
+		toString.add(" + $S", " ]");
 		if (anyNonRequired)
 			typeSpec.addMethod(requiredConstructor.build());
 		if (!requiredConstructor.build().parameters().isEmpty()) {
