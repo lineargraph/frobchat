@@ -4,6 +4,7 @@ plugins {
 dependencies {
 	api(projects.json.library)
 	testImplementation(libs.junit)
+	testRuntimeOnly(libs.junit.platform)
 }
 
 java.toolchain.languageVersion.set(JavaLanguageVersion.of(21))
@@ -38,5 +39,5 @@ java.withSourcesJar()
 java.withJavadocJar()
 
 tasks.test {
-	failOnNoDiscoveredTests = false
+	useJUnitPlatform()
 }
