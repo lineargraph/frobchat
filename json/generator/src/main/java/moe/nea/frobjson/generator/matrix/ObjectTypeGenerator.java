@@ -7,9 +7,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import moe.nea.frobjson.generator.NameCollection;
 import moe.nea.frobjson.generator.TypeUtils;
+import moe.nea.frobjson.internal.StreamUtil;
 
 import javax.lang.model.element.Modifier;
 import java.util.List;
+import java.util.stream.Stream;
 
 public class ObjectTypeGenerator implements ClassGenerator {
 	@Getter
@@ -55,12 +57,6 @@ public class ObjectTypeGenerator implements ClassGenerator {
 		typeSpec.addModifiers(Modifier.PUBLIC);
 		if (type.isDeprecated())
 			typeSpec.addAnnotation(Deprecated.class);
-		var constructor = MethodSpec.constructorBuilder()
-			.addModifiers(Modifier.PUBLIC);
-		var requiredConstructor = MethodSpec.constructorBuilder()
-			.addModifiers(Modifier.PUBLIC);
-
-		boolean anyNonRequired = false;
 		for (var property : getOwnedProperties()) {
 			var deprecated = property.getMemberType() instanceof MemberType.DirectDeclaration decl
 				&& decl.type().isDeprecated();
@@ -74,13 +70,7 @@ public class ObjectTypeGenerator implements ClassGenerator {
 			}
 			if (property.isRequired()) {
 				jsonPropertySpec.addMember("required", "true");
-				requiredConstructor.addParameter(fieldType, fieldName)
-					.addStatement("this.$L = $L", fieldName, fieldName);
-			} else {
-				anyNonRequired = true;
 			}
-			constructor.addParameter(fieldType, fieldName)
-				.addStatement("this.$L = $L", fieldName, fieldName);
 			fieldSpec.addAnnotation(jsonPropertySpec.build());
 			typeSpec.addField(fieldSpec.build());
 			typeSpec.addMethod(MethodSpec.methodBuilder(fieldName)
@@ -89,27 +79,48 @@ public class ObjectTypeGenerator implements ClassGenerator {
 				.addStatement("return this.$L", fieldName)
 				.addAnnotations(TypeUtils.deprecatedIf(deprecated))
 				.build());
-
 		}
-		var toString = CodeBlock.builder()
-			.add("$S + ", String.join(".", classNameSpace.getClassName().simpleNames()) + " [ ")
-			.add(getOwnedProperties()
-				.stream()
-				.map(it -> CodeBlock.of("$S + $L", it.getName() + " = ", it.getFieldName()))
-				.collect(CodeBlock.joining(" + \", \" + ")));
+		typeSpec.addMethod(MethodSpec.methodBuilder("toString")
+			.addAnnotation(Override.class)
+			.returns(String.class)
+			.addModifiers(Modifier.PUBLIC)
+			.addStatement("return $L", CodeBlock.builder()
+				.add("$S", String.join(".", classNameSpace.getClassName().simpleNames()) + " [ ")
+				.add(getOwnedProperties()
+					.stream()
+					.map(it -> CodeBlock.of(" + $S + $L", it.getName() + " = ", it.getFieldName()))
+					.collect(CodeBlock.joining(" + \", \"")))
+				.add(" + $S", " ]")
+				.build())
+			.build());
+		addConstructors(typeSpec);
+	}
 
-		toString.add(" + $S", " ]");
-		if (anyNonRequired)
-			typeSpec.addMethod(requiredConstructor.build());
-		if (!requiredConstructor.build().parameters().isEmpty()) {
+	public void addConstructors(TypeSpec.Builder typeSpec) {
+		var requiredConstructor = MethodSpec.constructorBuilder()
+			.addModifiers(Modifier.PUBLIC);
+		boolean isEmptyConstructor = true;
+		boolean isFullConstructor = true;
+		var fullConstructor = MethodSpec.constructorBuilder()
+			.addModifiers(Modifier.PUBLIC);
+		for (var prop : getOwnedProperties()) {
+			fullConstructor
+				.addParameter(prop.getRenderedTypeName(), prop.getFieldName())
+				.addStatement("this.$L = $L", prop.getFieldName(), prop.getFieldName());
+			if (prop.isRequired()) {
+				isEmptyConstructor = false;
+				requiredConstructor
+					.addParameter(prop.getRenderedTypeName(), prop.getFieldName())
+					.addStatement("this.$L = $L", prop.getFieldName(), prop.getFieldName());
+			} else {
+				isFullConstructor = false;
+			}
+		}
+		typeSpec.addMethod(requiredConstructor.build());
+		if (!isEmptyConstructor)
 			typeSpec.addMethod(MethodSpec.constructorBuilder().build());
-		}
-		typeSpec.addMethod(constructor.build())
-			.addMethod(MethodSpec.methodBuilder("toString")
-				.addAnnotation(Override.class)
-				.returns(String.class)
-				.addModifiers(Modifier.PUBLIC)
-				.addStatement("return $L", toString.build())
-				.build());
+		if (!isFullConstructor)
+			typeSpec.addMethod(fullConstructor.build());
+
 	}
 }
