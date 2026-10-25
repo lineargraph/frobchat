@@ -32,12 +32,12 @@ public class ExtendsTypeGenerator extends ObjectTypeGenerator {
 	}
 
 	@Override
-	public void emitDependencies(NameSpace.ClassNameSpace classNameSpace) {
+	public void emitDependencies(ClassNameSpace classNameSpace) {
 		super.emitDependencies(classNameSpace);
 	}
 
 	@Override
-	public void writeType(TypeSpec.Builder spec, NameSpace.ClassNameSpace classNameSpace) {
+	public void writeType(TypeSpec.Builder spec, ClassNameSpace classNameSpace) {
 		spec.superclass(parent.className());
 		super.writeType(spec, classNameSpace);
 	}

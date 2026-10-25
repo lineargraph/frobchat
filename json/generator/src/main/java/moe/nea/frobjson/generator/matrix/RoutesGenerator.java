@@ -15,7 +15,7 @@ public class RoutesGenerator implements ClassGenerator {
 	}
 
 	@Override
-	public void emitDependencies(NameSpace.ClassNameSpace classNameSpace) {
+	public void emitDependencies(ClassNameSpace classNameSpace) {
 		var containingPackage = classNameSpace.getPackageNameSpace();
 		var basePath = routes.guessBasePath();
 		for (var pathEntry : routes.getPaths().entrySet()) {
@@ -32,7 +32,7 @@ public class RoutesGenerator implements ClassGenerator {
 	}
 
 	@Override
-	public void writeType(TypeSpec.Builder builder, NameSpace.ClassNameSpace classNameSpace) {
+	public void writeType(TypeSpec.Builder builder, ClassNameSpace classNameSpace) {
 		builder.addJavadoc("TODO: actually do something useful in here");
 	}
 }

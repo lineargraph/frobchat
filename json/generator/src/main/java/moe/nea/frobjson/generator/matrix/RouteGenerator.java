@@ -130,7 +130,7 @@ public class RouteGenerator implements ClassGenerator {
 	}
 
 	@Override
-	public void emitDependencies(NameSpace.ClassNameSpace classNameSpace) {
+	public void emitDependencies(ClassNameSpace classNameSpace) {
 		for (var parameter : route.getParameters()) {
 			var parameterType = resolveTypeName(classNameSpace, parameter.getName(), parameter.getSchema());
 			parameterTypes.put(parameter, parameterType);
@@ -155,7 +155,7 @@ public class RouteGenerator implements ClassGenerator {
 	}
 
 	@Override
-	public void writeType(TypeSpec.Builder spec, NameSpace.ClassNameSpace classNameSpace) {
+	public void writeType(TypeSpec.Builder spec, ClassNameSpace classNameSpace) {
 		spec.addModifiers(Modifier.PUBLIC, Modifier.FINAL)
 			.addMethod(MethodSpec.methodBuilder("method")
 				.addModifiers(Modifier.PUBLIC)

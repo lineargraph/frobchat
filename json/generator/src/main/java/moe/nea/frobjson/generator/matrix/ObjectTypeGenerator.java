@@ -12,7 +12,6 @@ import javax.lang.model.element.Modifier;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public class ObjectTypeGenerator implements ClassGenerator {
 	@Getter
@@ -51,7 +50,7 @@ public class ObjectTypeGenerator implements ClassGenerator {
 	}
 
 	@Override
-	public void emitDependencies(NameSpace.ClassNameSpace classNameSpace) {
+	public void emitDependencies(ClassNameSpace classNameSpace) {
 		for (var property : getOwnedProperties()) {
 			property.setRenderedTypeName(
 				resolveTypeName(classNameSpace, property.getName(), property.getMemberType())
@@ -93,7 +92,7 @@ public class ObjectTypeGenerator implements ClassGenerator {
 		}
 	}
 
-	public void writeToString(TypeSpec.Builder typeSpec, NameSpace.ClassNameSpace classNameSpace) {
+	public void writeToString(TypeSpec.Builder typeSpec, ClassNameSpace classNameSpace) {
 		typeSpec.addMethod(MethodSpec.methodBuilder("toString")
 			.addAnnotation(Override.class)
 			.returns(String.class)
@@ -111,7 +110,7 @@ public class ObjectTypeGenerator implements ClassGenerator {
 
 
 	@Override
-	public void writeType(TypeSpec.Builder typeSpec, NameSpace.ClassNameSpace classNameSpace) {
+	public void writeType(TypeSpec.Builder typeSpec, ClassNameSpace classNameSpace) {
 		typeSpec.addModifiers(Modifier.PUBLIC);
 		if (type.isDeprecated())
 			typeSpec.addAnnotation(Deprecated.class);

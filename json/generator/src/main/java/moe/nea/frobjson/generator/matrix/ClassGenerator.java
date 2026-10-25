@@ -11,9 +11,9 @@ import java.util.List;
 
 public interface ClassGenerator {
 
-	void emitDependencies(NameSpace.ClassNameSpace classNameSpace);
+	void emitDependencies(ClassNameSpace classNameSpace);
 
-	void writeType(TypeSpec.Builder spec, NameSpace.ClassNameSpace classNameSpace);
+	void writeType(TypeSpec.Builder spec, ClassNameSpace classNameSpace);
 
 	default String guessFieldName(String name, MemberType memberType) {
 		if (name.startsWith("m.")) // TODO: this is matrix specific, add more generic interface

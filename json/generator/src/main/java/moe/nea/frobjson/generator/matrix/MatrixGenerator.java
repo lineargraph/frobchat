@@ -38,19 +38,19 @@ public class MatrixGenerator {
 		return basePackage;
 	}
 
-	private Map<String, NameSpace.PackageNameSpace> nameSpaceMap = new HashMap<>();
+	private Map<String, PackageNameSpace> nameSpaceMap = new HashMap<>();
 
-	public NameSpace.PackageNameSpace getPackageNameSpace(String packageName) {
-		return nameSpaceMap.computeIfAbsent(packageName, it -> new NameSpace.PackageNameSpace(this, it));
+	public PackageNameSpace getPackageNameSpace(String packageName) {
+		return nameSpaceMap.computeIfAbsent(packageName, it -> new PackageNameSpace(this, it));
 	}
 
-	public NameSpace.ClassNameSpace getClassNameSpace(ClassName className) {
+	public ClassNameSpace getClassNameSpace(ClassName className) {
 		NameSpace ns = getPackageNameSpace(className.packageName());
 		for (String s : className.simpleNames()) {
 			ns = ns.getExistingChild(s);
 		}
-		assert ns instanceof NameSpace.ClassNameSpace;
-		return (NameSpace.ClassNameSpace) ns;
+		assert ns instanceof ClassNameSpace;
+		return (ClassNameSpace) ns;
 	}
 
 	public Path matrixSpecRoot() {
