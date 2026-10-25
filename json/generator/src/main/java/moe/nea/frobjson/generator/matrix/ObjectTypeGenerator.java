@@ -9,7 +9,9 @@ import moe.nea.frobjson.generator.NameCollection;
 import moe.nea.frobjson.generator.TypeUtils;
 
 import javax.lang.model.element.Modifier;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class ObjectTypeGenerator implements ClassGenerator {
@@ -26,9 +28,10 @@ public class ObjectTypeGenerator implements ClassGenerator {
 					entry.getKey(),
 					NameCollection.foldName(guessFieldName(entry.getKey(), entry.getValue()), NameCollection.NameType.FIELD_NAME),
 					entry.getValue(),
-					type.getRequired().contains(entry.getKey()))
+					type.getRequired().contains(entry.getKey()),
+					this)
 			)
-			.toList();
+			.collect(Collectors.toCollection(ArrayList::new));
 	}
 
 	@Getter
@@ -38,8 +41,13 @@ public class ObjectTypeGenerator implements ClassGenerator {
 		final String fieldName;
 		final MemberType memberType;
 		final boolean required;
+		final ObjectTypeGenerator generator;
 		@Setter
 		TypeName renderedTypeName;
+	}
+
+	public List<Property> getAllProperties() {
+		return getOwnedProperties();
 	}
 
 	@Override
@@ -73,9 +81,7 @@ public class ObjectTypeGenerator implements ClassGenerator {
 			.addStatement("return this.$L", fieldName)
 			.addAnnotations(TypeUtils.deprecatedIf(deprecated))
 			.build());
-		StringBuilder setterName = new StringBuilder("set");
-		NameCollection.capitalize(setterName, fieldName);
-		typeSpec.addMethod(MethodSpec.methodBuilder(setterName.toString())
+		typeSpec.addMethod(MethodSpec.methodBuilder(NameCollection.foldName("set " + fieldName, NameCollection.NameType.METHOD_NAME))
 			.addParameter(fieldType, fieldName)
 			.addStatement("this.$L = $L", fieldName, fieldName)
 			.build());
@@ -94,9 +100,9 @@ public class ObjectTypeGenerator implements ClassGenerator {
 			.addModifiers(Modifier.PUBLIC)
 			.addStatement("return $L", CodeBlock.builder()
 				.add("$S", String.join(".", classNameSpace.getClassName().simpleNames()) + " [ ")
-				.add(getOwnedProperties()
+				.add(getAllProperties()
 					.stream()
-					.map(it -> CodeBlock.of(" + $S + $L", it.getName() + " = ", it.getFieldName()))
+					.map(it -> CodeBlock.of(" + $S + this.$L()", it.getName() + " = ", it.getFieldName()))
 					.collect(CodeBlock.joining(" + \", \"")))
 				.add(" + $S", " ]")
 				.build())
@@ -117,7 +123,16 @@ public class ObjectTypeGenerator implements ClassGenerator {
 	public void writeConstructor(TypeSpec.Builder typeSpec, List<Property> properties) {
 		var constructor = MethodSpec.constructorBuilder()
 			.addModifiers(Modifier.PUBLIC);
+		List<CodeBlock> superArgs = new ArrayList<>();
 		for (var prop : properties) {
+			if (prop.getGenerator() == this) continue;
+			constructor.addParameter(prop.getRenderedTypeName(), prop.getFieldName());
+			superArgs.add(CodeBlock.of("$L", prop.getFieldName()));
+		}
+		if (!superArgs.isEmpty())
+			constructor.addStatement("super($L)", CodeBlock.join(superArgs, ", "));
+		for (var prop : properties) {
+			if (prop.getGenerator() != this) continue;
 			constructor
 				.addParameter(prop.getRenderedTypeName(), prop.getFieldName())
 				.addStatement("this.$L = $L", prop.getFieldName(), prop.getFieldName());
@@ -126,12 +141,12 @@ public class ObjectTypeGenerator implements ClassGenerator {
 	}
 
 	public void writeConstructors(TypeSpec.Builder typeSpec) {
-		var requiredProperties = getOwnedProperties().stream().filter(Property::isRequired).toList();
-		if (!requiredProperties.isEmpty() && requiredProperties.size() != getOwnedProperties().size()) {
+		var requiredProperties = getAllProperties().stream().filter(Property::isRequired).toList();
+		if (!requiredProperties.isEmpty() && requiredProperties.size() != getAllProperties().size()) {
 			writeConstructor(typeSpec, requiredProperties);
 		}
 		writeConstructor(typeSpec, List.of());
-		if (!getOwnedProperties().isEmpty())
-			writeConstructor(typeSpec, getOwnedProperties());
+		if (!getAllProperties().isEmpty())
+			writeConstructor(typeSpec, getAllProperties());
 	}
 }
