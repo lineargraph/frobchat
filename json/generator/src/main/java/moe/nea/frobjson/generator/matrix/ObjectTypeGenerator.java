@@ -7,7 +7,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import moe.nea.frobjson.generator.NameCollection;
 import moe.nea.frobjson.generator.TypeUtils;
-import moe.nea.frobjson.internal.StreamUtil;
 
 import javax.lang.model.element.Modifier;
 import java.util.List;
@@ -52,40 +51,43 @@ public class ObjectTypeGenerator implements ClassGenerator {
 		}
 	}
 
-	@Override
-	public void writeType(TypeSpec.Builder typeSpec, NameSpace.ClassNameSpace classNameSpace) {
-		typeSpec.addModifiers(Modifier.PUBLIC);
-		if (type.isDeprecated())
-			typeSpec.addAnnotation(Deprecated.class);
-		for (var property : getOwnedProperties()) {
-			var deprecated = property.getMemberType() instanceof MemberType.DirectDeclaration decl
-				&& decl.type().isDeprecated();
-			var fieldType = property.getRenderedTypeName();
-			var fieldName = property.getFieldName();
-			var fieldSpec = FieldSpec.builder(fieldType, fieldName, Modifier.PRIVATE)
-				.addAnnotations(TypeUtils.deprecatedIf(deprecated));
-			var jsonPropertySpec = AnnotationSpec.builder(JsonProperty.class);
-			if (!fieldName.equals(property.getName())) {
-				jsonPropertySpec.addMember("value", "$S", property.getName());
-			}
-			if (property.isRequired()) {
-				jsonPropertySpec.addMember("required", "true");
-			}
-			fieldSpec.addAnnotation(jsonPropertySpec.build());
-			typeSpec.addField(fieldSpec.build());
-			typeSpec.addMethod(MethodSpec.methodBuilder(fieldName)
-				.addModifiers(Modifier.PUBLIC)
-				.returns(fieldType)
-				.addStatement("return this.$L", fieldName)
-				.addAnnotations(TypeUtils.deprecatedIf(deprecated))
-				.build());
-			StringBuilder setterName = new StringBuilder("set");
-			NameCollection.capitalize(setterName, fieldName);
-			typeSpec.addMethod(MethodSpec.methodBuilder(setterName.toString())
-				.addParameter(fieldType, fieldName)
-				.addStatement("this.$L = $L", fieldName, fieldName)
-				.build());
+	public void writePropertyField(Property property, TypeSpec.Builder typeSpec) {
+		var deprecated = property.getMemberType() instanceof MemberType.DirectDeclaration decl
+			&& decl.type().isDeprecated();
+		var fieldType = property.getRenderedTypeName();
+		var fieldName = property.getFieldName();
+		var fieldSpec = FieldSpec.builder(fieldType, fieldName, Modifier.PRIVATE)
+			.addAnnotations(TypeUtils.deprecatedIf(deprecated));
+		var jsonPropertySpec = AnnotationSpec.builder(JsonProperty.class);
+		if (!fieldName.equals(property.getName())) {
+			jsonPropertySpec.addMember("value", "$S", property.getName());
 		}
+		if (property.isRequired()) {
+			jsonPropertySpec.addMember("required", "true");
+		}
+		fieldSpec.addAnnotation(jsonPropertySpec.build());
+		typeSpec.addField(fieldSpec.build());
+		typeSpec.addMethod(MethodSpec.methodBuilder(fieldName)
+			.addModifiers(Modifier.PUBLIC)
+			.returns(fieldType)
+			.addStatement("return this.$L", fieldName)
+			.addAnnotations(TypeUtils.deprecatedIf(deprecated))
+			.build());
+		StringBuilder setterName = new StringBuilder("set");
+		NameCollection.capitalize(setterName, fieldName);
+		typeSpec.addMethod(MethodSpec.methodBuilder(setterName.toString())
+			.addParameter(fieldType, fieldName)
+			.addStatement("this.$L = $L", fieldName, fieldName)
+			.build());
+	}
+
+	public void writePropertyFields(TypeSpec.Builder typeSpec) {
+		for (var property : getOwnedProperties()) {
+			writePropertyField(property, typeSpec);
+		}
+	}
+
+	public void writeToString(TypeSpec.Builder typeSpec, NameSpace.ClassNameSpace classNameSpace) {
 		typeSpec.addMethod(MethodSpec.methodBuilder("toString")
 			.addAnnotation(Override.class)
 			.returns(String.class)
@@ -99,34 +101,37 @@ public class ObjectTypeGenerator implements ClassGenerator {
 				.add(" + $S", " ]")
 				.build())
 			.build());
-		addConstructors(typeSpec);
 	}
 
-	public void addConstructors(TypeSpec.Builder typeSpec) {
-		var requiredConstructor = MethodSpec.constructorBuilder()
+
+	@Override
+	public void writeType(TypeSpec.Builder typeSpec, NameSpace.ClassNameSpace classNameSpace) {
+		typeSpec.addModifiers(Modifier.PUBLIC);
+		if (type.isDeprecated())
+			typeSpec.addAnnotation(Deprecated.class);
+		writePropertyFields(typeSpec);
+		writeToString(typeSpec, classNameSpace);
+		writeConstructors(typeSpec);
+	}
+
+	public void writeConstructor(TypeSpec.Builder typeSpec, List<Property> properties) {
+		var constructor = MethodSpec.constructorBuilder()
 			.addModifiers(Modifier.PUBLIC);
-		boolean isEmptyConstructor = true;
-		boolean isFullConstructor = true;
-		var fullConstructor = MethodSpec.constructorBuilder()
-			.addModifiers(Modifier.PUBLIC);
-		for (var prop : getOwnedProperties()) {
-			fullConstructor
+		for (var prop : properties) {
+			constructor
 				.addParameter(prop.getRenderedTypeName(), prop.getFieldName())
 				.addStatement("this.$L = $L", prop.getFieldName(), prop.getFieldName());
-			if (prop.isRequired()) {
-				isEmptyConstructor = false;
-				requiredConstructor
-					.addParameter(prop.getRenderedTypeName(), prop.getFieldName())
-					.addStatement("this.$L = $L", prop.getFieldName(), prop.getFieldName());
-			} else {
-				isFullConstructor = false;
-			}
 		}
-		typeSpec.addMethod(requiredConstructor.build());
-		if (!isEmptyConstructor)
-			typeSpec.addMethod(MethodSpec.constructorBuilder().build());
-		if (!isFullConstructor)
-			typeSpec.addMethod(fullConstructor.build());
+		typeSpec.addMethod(constructor.build());
+	}
 
+	public void writeConstructors(TypeSpec.Builder typeSpec) {
+		var requiredProperties = getOwnedProperties().stream().filter(Property::isRequired).toList();
+		if (!requiredProperties.isEmpty() && requiredProperties.size() != getOwnedProperties().size()) {
+			writeConstructor(typeSpec, requiredProperties);
+		}
+		writeConstructor(typeSpec, List.of());
+		if (!getOwnedProperties().isEmpty())
+			writeConstructor(typeSpec, getOwnedProperties());
 	}
 }
