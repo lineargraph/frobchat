@@ -136,6 +136,10 @@ public class ResponseHelpers {
 		return MAPPER.readValue(text, tClass);
 	}
 
+	public static <T> T fromJsonNode(JsonNode node, Class<T> tClass) {
+		return MAPPER.treeToValue(node, tClass);
+	}
+
 	public static <T> HttpResponse.BodySubscriber<T> parseJson(
 		HttpResponse.ResponseInfo responseInfo,
 		Class<T> dataClass

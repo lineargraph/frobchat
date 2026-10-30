@@ -3,6 +3,7 @@ package moe.nea.frobmatrix.api.clientserver.routes.sync;
 import moe.nea.frobmatrix.api.clientserver.definitions.clienteventwithoutroomid.ClientEventWithoutRoomId;
 import moe.nea.frobmatrix.event.Event;
 import moe.nea.frobmatrix.event.EventContent;
+import moe.nea.frobmatrix.event.RawEventContent;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -24,8 +25,8 @@ class SyncTest {
 			for (ClientEventWithoutRoomId event : joinedRoom
 				.timeline()
 				.events()) {
-				EventContent eventContent = event.content();
-				EventContent prevEventContent = event.unsigned().prevContent();
+				RawEventContent eventContent = event.content();
+				RawEventContent prevEventContent = event.unsigned().prevContent();
 				ClientEventWithoutRoomId redactedBecause = event.unsigned().redactedBecause();
 			}
 		}

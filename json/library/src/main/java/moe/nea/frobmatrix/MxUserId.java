@@ -1,5 +1,6 @@
 package moe.nea.frobmatrix;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import moe.nea.frobmatrix.api.UriParameter;
 import org.jspecify.annotations.NonNull;
@@ -12,6 +13,7 @@ public record MxUserId(
 ) implements UriParameter {
 	public static Pattern MX_USER_ID_PATTERN = Pattern.compile("@(.+):(.+)");
 
+	@JsonCreator
 	public static MxUserId parse(String mxcId) {
 		var matcher = MX_USER_ID_PATTERN.matcher(mxcId);
 		if (matcher.matches())

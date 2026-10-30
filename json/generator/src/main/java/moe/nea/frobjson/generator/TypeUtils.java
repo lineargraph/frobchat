@@ -15,6 +15,7 @@ public class TypeUtils {
 	public static TypeName strMap(TypeName valueType) {
 		return map(STR, valueType);
 	}
+
 	public static TypeName map(TypeName keyType, TypeName valueType) {
 		return ParameterizedTypeName.get(ClassName.get(Map.class), keyType.box(), valueType.box());
 	}
@@ -69,5 +70,11 @@ public class TypeUtils {
 			matcher.appendTail(sb);
 		}
 		return sb.toString();
+	}
+
+	public static ClassName LIST = ClassName.get(List.class);
+
+	public static TypeName list(TypeName className) {
+		return ParameterizedTypeName.get(LIST, className);
 	}
 }

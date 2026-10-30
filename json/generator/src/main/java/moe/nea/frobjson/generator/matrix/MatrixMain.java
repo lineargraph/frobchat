@@ -43,12 +43,12 @@ public class MatrixMain {
 			.override(ctx ->
 				ctx.ifPath("api/client-server/definitions/client_event_without_room_id.yaml")
 					.ifTitle("EventContent")
-					.thenUseClass("moe.nea.frobmatrix.event.EventContent"));
+					.thenUseClass("moe.nea.frobmatrix.event.RawEventContent"));
 		schemaLibrary
 			.override(ctx ->
 				ctx.ifPath("api/client-server/definitions/client_event_without_room_id.yaml")
 					.ifJson(it -> it.has("description") && it.get("description").asString().contains("The body of this event"))
-					.thenUseClass("moe.nea.frobmatrix.event.EventContent"));
+					.thenUseClass("moe.nea.frobmatrix.event.RawEventContent"));
 		schemaLibrary
 			.override(ctx ->
 				ctx.ifPath(path -> path.endsWith("/core-event-schema/event.yaml"))
@@ -69,6 +69,15 @@ public class MatrixMain {
 		clientServerApi.generateRoutes("login.yaml");
 		clientServerApi.generateRoutes("keys.yaml");
 		clientServerApi.generateRoutes("sync.yaml");
+
+		var eventGenerator = new EventGenerator(matrixGenerator);
+		eventGenerator.generateEventType("m.dummy.yaml");
+		eventGenerator.generateEventType("m.direct.yaml");
+		eventGenerator.generateEventType("m.fully_read.yaml");
+		eventGenerator.generateEventType("m.ignored_user_list.yaml");
+		eventGenerator.generateEventType("m.room.name.yaml");
+		eventGenerator.generateEventType("m.room.pinned_events.yaml");
+
 		matrixGenerator.writeAll();
 	}
 }
