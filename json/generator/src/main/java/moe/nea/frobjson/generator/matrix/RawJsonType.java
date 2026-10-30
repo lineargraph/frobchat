@@ -36,6 +36,10 @@ public sealed abstract class RawJsonType {
 	private boolean deprecated = false;
 	@JsonProperty("x-manualPackageOverride")
 	private @Nullable String manualPackageOverride;
+	@JsonProperty("x-pattern-format")
+	private @Nullable String patternFormat;
+	@JsonProperty("x-changedInMatrixVersion")
+	private @Nullable Void changedInMatrixVersion;
 
 	// Pseudo type for "missing" types. Most likely this is for free form types
 	@ToString(callSuper = true)
@@ -81,5 +85,6 @@ public sealed abstract class RawJsonType {
 		private Map<String, MemberType> properties = new HashMap<>();
 		private @Nullable MemberType additionalProperties = null;
 		private Set<String> required = new HashSet<>();
+		private Map<String, MemberType> patternProperties = new HashMap<>();
 	}
 }

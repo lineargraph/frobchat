@@ -95,6 +95,8 @@ public class RawOpenApiRoutes {
 		private boolean required;
 		private Void example;
 		private MemberType schema;
+		@JsonProperty("x-addedInMatrixVersion")
+		private String addedInMatrixVersion;
 	}
 
 	public enum ParameterLocation {
