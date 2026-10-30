@@ -1,4 +1,4 @@
-package moe.nea.frobmatrix;
+package moe.nea.frobmatrix.http;
 
 import moe.nea.frobmatrix.api.UriParameter;
 

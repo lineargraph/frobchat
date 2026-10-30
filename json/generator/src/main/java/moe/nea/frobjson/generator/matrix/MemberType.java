@@ -38,6 +38,7 @@ public sealed interface MemberType {
 
 	private static MemberType deserialize(JsonParser p, DeserializationContext ctxt) throws JacksonException {
 		ObjectNode tree = p.readValueAsTree();
+		tree.remove("$schema");
 		var context = Objects.requireNonNull(YAMLUtils.getContext());
 		var typeResolutionContext = new TypeResolutionContext(
 			context,

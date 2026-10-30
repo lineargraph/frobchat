@@ -142,8 +142,11 @@ public class SchemaLibrary {
 		}
 
 		public TypeResolutionContextHelper ifPath(String path) {
-			failed = failed || !library().dataRoot().relativize(context.context().file())
-				.toString().equals(path);
+			return ifPath(path::equals);
+		}
+
+		public TypeResolutionContextHelper ifPath(Predicate<String> path) {
+			failed = failed || !path.test(library().dataRoot().relativize(context.context().file()).toString());
 			return this;
 		}
 

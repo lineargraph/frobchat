@@ -1,22 +1,21 @@
 package moe.nea.frobmatrix.api;
 
+import moe.nea.frobmatrix.http.BooleanUriParameter;
 import moe.nea.frobmatrix.Either;
-import moe.nea.frobmatrix.StringUriParameter;
+import moe.nea.frobmatrix.http.IntegerUriParameter;
+import moe.nea.frobmatrix.http.StringUriParameter;
+import org.jspecify.annotations.Nullable;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.io.PipedInputStream;
-import java.io.PipedOutputStream;
 import java.net.URLEncoder;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
-import java.util.function.Function;
 import java.util.regex.Pattern;
 
 public class ResponseHelpers {
@@ -41,9 +40,18 @@ public class ResponseHelpers {
 		return urlEncodeString(parameter.choose(UriParameter::asUriParameter, UriParameter::asUriParameter));
 	}
 
-	public static String urlEncodeNamedParameter(String name, String value) {
-		return urlEncodeNamedParameter(name, new StringUriParameter(value));
+	public static String urlEncodeNamedParameter(String name, @Nullable String value) {
+		return urlEncodeNamedParameter(name, value == null ? null : new StringUriParameter(value));
 	}
+
+	public static String urlEncodeNamedParameter(String name, Boolean value) {
+		return urlEncodeNamedParameter(name, value == null ? null : new BooleanUriParameter(value));
+	}
+
+	public static String urlEncodeNamedParameter(String name, Integer value) {
+		return urlEncodeNamedParameter(name, value == null ? null : new IntegerUriParameter(value));
+	}
+
 
 	public static String urlEncodeNamedParameter(String name, List<String> values) {
 		var stringBuilder = new StringBuilder();
@@ -58,7 +66,8 @@ public class ResponseHelpers {
 		return stringBuilder.toString();
 	}
 
-	public static String urlEncodeNamedParameter(String name, UriParameter value) {
+	public static String urlEncodeNamedParameter(String name, @Nullable UriParameter value) {
+		if (value == null) return "";
 		return urlEncodeString(name) + "=" + urlEncodeParameter(value.asUriParameter());
 	}
 

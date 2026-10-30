@@ -32,6 +32,33 @@ public class MatrixMain {
 					ctx.context.context().folder(),
 					ctx.json().get("$ref").asString().substring("../client-server/".length())
 				)));
+		clientServerApi.schemaLibrary()
+			.override(ctx->
+				ctx.ifPath("definitions/client_event_without_room_id.yaml")
+					.ifTitle("ClientEventWithoutRoomID")
+					.ifJson(it -> !it.has("properties"))
+					.thenUseClass("moe.nea.frobmatrix.api.clientserver.definitions.clienteventwithoutroomid.ClientEventWithoutRoomId"));
+		clientServerApi.schemaLibrary()
+			.override(ctx->
+				ctx.ifPath("definitions/client_event_without_room_id.yaml")
+					.ifTitle("EventContent")
+					.thenUseClass("moe.nea.frobmatrix.event.EventContent"));
+		clientServerApi.schemaLibrary()
+			.override(ctx->
+				ctx.ifPath("definitions/client_event_without_room_id.yaml")
+					.ifJson(it -> it.has("description") && it.get("description").asString().contains("The body of this event"))
+					.thenUseClass("moe.nea.frobmatrix.event.EventContent"));
+		clientServerApi.schemaLibrary()
+			.override(ctx ->
+				ctx.ifPath(path -> path.endsWith("/core-event-schema/event.yaml"))
+					.thenUseClass("moe.nea.frobmatrix.event.Event"));
+		clientServerApi.schemaLibrary()
+			.override(ctx ->
+				ctx.ifPath(path -> path.endsWith("/core-event-schema/stripped_state.yaml"))
+					.thenUseClass("moe.nea.frobmatrix.event.StrippedStateEvent"));
+//		clientServerApi.schemaLibrary().override(ctx ->
+//			ctx.ifPath(path -> path.endsWith("core-event-schema/event.yaml"))
+//				.thenUseClass());
 
 		clientServerApi.generateRoutes("room_summary.yaml");
 		clientServerApi.generateRoutes("wellknown.yaml");
@@ -40,7 +67,7 @@ public class MatrixMain {
 		clientServerApi.generateRoutes("registration_tokens.yaml");
 		clientServerApi.generateRoutes("login.yaml");
 		clientServerApi.generateRoutes("keys.yaml");
-//		clientServerApi.generateRoutes("sync.yaml");
+		clientServerApi.generateRoutes("sync.yaml");
 		matrixGenerator.writeAll();
 	}
 }

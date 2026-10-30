@@ -6,10 +6,7 @@ import com.palantir.javapoet.TypeName;
 import com.palantir.javapoet.TypeSpec;
 import moe.nea.frobjson.generator.NameCollection;
 import moe.nea.frobjson.generator.TypeUtils;
-import moe.nea.frobmatrix.Either;
-import moe.nea.frobmatrix.MxRoomAlias;
-import moe.nea.frobmatrix.MxRoomId;
-import moe.nea.frobmatrix.MxUserId;
+import moe.nea.frobmatrix.*;
 import tools.jackson.databind.JsonNode;
 
 import java.net.URI;
@@ -45,6 +42,7 @@ public interface ClassGenerator {
 			case "mx-room-alias" -> ClassName.get(MxRoomAlias.class);
 			case "mx-room-id" -> ClassName.get(MxRoomId.class);
 			case "mx-user-id" -> ClassName.get(MxUserId.class);
+			case "mx-event-id" -> ClassName.get(MxEventId.class);
 			case "mx-server-name" -> ClassName.get(String.class); // TODO: custom server name class
 			case "uri" -> ClassName.get(URI.class);
 			case null -> ClassName.get(String.class);
