@@ -9,12 +9,14 @@ import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import moe.nea.frobjson.generator.NameCollection;
 import moe.nea.frobjson.generator.TypeUtils;
+import moe.nea.frobmatrix.api.ResponseHelpers;
 import org.jspecify.annotations.Nullable;
 
 import javax.lang.model.element.Modifier;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public class ObjectTypeGenerator implements ClassGenerator {
@@ -23,6 +25,8 @@ public class ObjectTypeGenerator implements ClassGenerator {
 	@Getter
 	private final List<Property> ownedProperties;
 	private TypeName renderedAdditionalProperties;
+	private String patternPropertyFormat;
+	private TypeName patternPropertyFormatType;
 
 	public ObjectTypeGenerator(RawJsonType.ObjectType type) {
 		this.type = type;
@@ -62,8 +66,24 @@ public class ObjectTypeGenerator implements ClassGenerator {
 			);
 		}
 		var additionalProperties = type.getAdditionalProperties();
+		var patternProperties = type.getPatternProperties();
+		assert patternProperties == null || patternProperties.size() <= 2;
+		assert additionalProperties == null || patternProperties == null;
 		if (additionalProperties != null)
 			this.renderedAdditionalProperties = resolveTypeName(classNameSpace, null, additionalProperties);
+		if (patternProperties != null && !patternProperties.isEmpty()) {
+			var patternEntry = patternProperties.entrySet().iterator().next();
+			var pattern = patternEntry.getKey();
+			var patternProperty = patternEntry.getValue();
+			if (patternProperty instanceof MemberType.DirectDeclaration directDeclaration) {
+				var directType = directDeclaration.type();
+				var patternFormat = directType.getPatternFormat();
+				if (patternFormat != null)
+					this.patternPropertyFormatType = getStringFormatType(patternFormat);
+			}
+			this.patternPropertyFormat = pattern;
+			this.renderedAdditionalProperties = resolveTypeName(classNameSpace, null, patternProperty);
+		}
 	}
 
 	public void writePropertyField(Property property, TypeSpec.Builder typeSpec) {
@@ -106,7 +126,17 @@ public class ObjectTypeGenerator implements ClassGenerator {
 	public void writeAdditionalProperties(
 		TypeName additionalProperties,
 		TypeSpec.Builder typeSpec) {
-		var mapType = TypeUtils.strMap(additionalProperties);
+		var keyType = patternPropertyFormatType == null
+			? TypeUtils.STR : patternPropertyFormatType;
+		var mapType = TypeUtils.map(keyType, additionalProperties);
+		CodeBlock patternCheck = CodeBlock.of("");
+		if (patternPropertyFormatType == null && patternPropertyFormat != null) {
+			typeSpec.addField(FieldSpec.builder(Pattern.class, "PROPERTY_PATTERN")
+				.addModifiers(Modifier.PUBLIC, Modifier.STATIC, Modifier.FINAL)
+				.initializer("$T.compile($S)", Pattern.class, patternPropertyFormat)
+				.build());
+			patternCheck = CodeBlock.of("$T.checkPattern(name, PROPERTY_PATTERN);\n", ResponseHelpers.class);
+		}
 		typeSpec
 			.addField(FieldSpec.builder(mapType, "additionalProperties", Modifier.PRIVATE, Modifier.FINAL)
 				.initializer("new $T<>()", LinkedHashMap.class)
@@ -120,8 +150,9 @@ public class ObjectTypeGenerator implements ClassGenerator {
 			.addMethod(MethodSpec.methodBuilder("setAdditionalProperty")
 				.addModifiers(Modifier.PUBLIC)
 				.addAnnotation(JsonAnySetter.class)
-				.addParameter(String.class, "name")
+				.addParameter(keyType, "name")
 				.addParameter(additionalProperties, "value")
+				.addCode(patternCheck)
 				.addStatement("this.additionalProperties.put(name, value)")
 				.build());
 	}

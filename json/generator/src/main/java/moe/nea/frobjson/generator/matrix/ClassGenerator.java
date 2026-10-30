@@ -5,6 +5,7 @@ import com.palantir.javapoet.ParameterizedTypeName;
 import com.palantir.javapoet.TypeName;
 import com.palantir.javapoet.TypeSpec;
 import moe.nea.frobjson.generator.NameCollection;
+import moe.nea.frobjson.generator.TypeUtils;
 import moe.nea.frobmatrix.Either;
 import moe.nea.frobmatrix.MxRoomAlias;
 import moe.nea.frobmatrix.MxRoomId;
@@ -39,21 +40,32 @@ public interface ClassGenerator {
 		return cns.getClassName();
 	}
 
+	default TypeName getStringFormatType(String format) {
+		return switch (format) {
+			case "mx-room-alias" -> ClassName.get(MxRoomAlias.class);
+			case "mx-room-id" -> ClassName.get(MxRoomId.class);
+			case "mx-user-id" -> ClassName.get(MxUserId.class);
+			case "mx-server-name" -> ClassName.get(String.class); // TODO: custom server name class
+			case "uri" -> ClassName.get(URI.class);
+			case null -> ClassName.get(String.class);
+			default -> throw new IllegalStateException("Unexpected format: " + format);
+		};
+	}
+
 	default TypeName resolveTypeName(NameSpace context, String nameHint, RawJsonType jsonType) {
 		switch (jsonType) {
 			case RawJsonType.ObjectType objectType -> {
+				if (objectType.getTitle() == null
+					&& objectType.getProperties().isEmpty()
+					&& objectType.getPatternProperties().isEmpty()) {
+					if (objectType.getAdditionalProperties() != null)
+						return TypeUtils.strMap(resolveTypeName(context, nameHint, objectType.getAdditionalProperties()));
+					return ClassName.get(JsonNode.class);
+				}
 				return resolveObjectType(context, nameHint, objectType);
 			}
 			case RawJsonType.StringType stringType -> {
-				return switch (stringType.getFormat()) {
-					case "mx-room-alias" -> ClassName.get(MxRoomAlias.class);
-					case "mx-room-id" -> ClassName.get(MxRoomId.class);
-					case "mx-user-id" -> ClassName.get(MxUserId.class);
-					case "mx-server-name" -> ClassName.get(String.class); // TODO: custom server name class
-					case "uri" -> ClassName.get(URI.class);
-					case null -> ClassName.get(String.class);
-					default -> throw new IllegalStateException("Unexpected format: " + stringType.getFormat());
-				};
+				return getStringFormatType(stringType.getFormat());
 			}
 			case RawJsonType.UnknownType unknownType -> {
 				return ClassName.get(JsonNode.class);

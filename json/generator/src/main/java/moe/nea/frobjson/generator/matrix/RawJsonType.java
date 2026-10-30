@@ -86,5 +86,7 @@ public sealed abstract class RawJsonType {
 		private @Nullable MemberType additionalProperties = null;
 		private Set<String> required = new HashSet<>();
 		private Map<String, MemberType> patternProperties = new HashMap<>();
+		private @Nullable Integer minProperties;
+		private @Nullable Integer maxProperties;
 	}
 }

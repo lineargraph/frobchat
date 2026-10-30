@@ -252,7 +252,9 @@ public sealed interface MemberType {
 				Stream.of(base, spec)
 					.flatMap(it -> it.getRequired().stream())
 					.collect(Collectors.toSet()),
-				mergeNulls(base.getPatternProperties(), spec.getPatternProperties()) // TODO: this is not valid, really
+				mergeNulls(base.getPatternProperties(), spec.getPatternProperties()), // TODO: this is not valid, really
+				mergeNulls(base.getMinProperties(), spec.getMinProperties()),
+				mergeNulls(base.getMaxProperties(), spec.getMaxProperties())
 			);
 			mergeCommon(merged, base, spec);
 			return merged;

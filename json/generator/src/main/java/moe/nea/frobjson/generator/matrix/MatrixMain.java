@@ -39,6 +39,7 @@ public class MatrixMain {
 		clientServerApi.generateRoutes("admin.yaml");
 		clientServerApi.generateRoutes("registration_tokens.yaml");
 		clientServerApi.generateRoutes("login.yaml");
+		clientServerApi.generateRoutes("keys.yaml");
 //		clientServerApi.generateRoutes("sync.yaml");
 		matrixGenerator.writeAll();
 	}

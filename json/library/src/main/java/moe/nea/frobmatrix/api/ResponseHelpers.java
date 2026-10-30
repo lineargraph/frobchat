@@ -17,6 +17,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.function.Function;
+import java.util.regex.Pattern;
 
 public class ResponseHelpers {
 	private final static ObjectMapper MAPPER = new JsonMapper();
@@ -122,6 +123,10 @@ public class ResponseHelpers {
 		return MAPPER.valueToTree(object);
 	}
 
+	public static <T> T fromJsonString(String text, Class<T> tClass) {
+		return MAPPER.readValue(text, tClass);
+	}
+
 	public static <T> HttpResponse.BodySubscriber<T> parseJson(
 		HttpResponse.ResponseInfo responseInfo,
 		Class<T> dataClass
@@ -129,4 +134,10 @@ public class ResponseHelpers {
 		return HttpResponse.BodySubscribers.mapping(HttpResponse.BodySubscribers.ofInputStream(), inputStream ->
 			MAPPER.readValue(new InputStreamReader(inputStream, getCharset(responseInfo)), dataClass));
 	}
+
+	public static void checkPattern(String key, Pattern pattern) {
+		if (!pattern.matcher(key).matches())
+			throw new RuntimeException("Key " + key + " does not match the expected pattern " + pattern);
+	}
+
 }

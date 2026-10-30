@@ -9,10 +9,14 @@ import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 public class TypeUtils {
-	public static TypeName MAP_STR_STR = strMap(ClassName.get(String.class));
+	public static TypeName STR = ClassName.get(String.class);
+	public static TypeName MAP_STR_STR = strMap(STR);
 
 	public static TypeName strMap(TypeName valueType) {
-		return ParameterizedTypeName.get(ClassName.get(Map.class), ClassName.get(String.class), valueType);
+		return map(STR, valueType);
+	}
+	public static TypeName map(TypeName keyType, TypeName valueType) {
+		return ParameterizedTypeName.get(ClassName.get(Map.class), keyType.box(), valueType.box());
 	}
 
 	public static TypeName required(
