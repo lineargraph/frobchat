@@ -1,5 +1,7 @@
 package moe.nea.frobjson.generator.matrix;
 
+import com.fasterxml.jackson.annotation.JsonAnyGetter;
+import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.palantir.javapoet.*;
 import lombok.Getter;
@@ -7,9 +9,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import moe.nea.frobjson.generator.NameCollection;
 import moe.nea.frobjson.generator.TypeUtils;
+import org.jspecify.annotations.Nullable;
 
 import javax.lang.model.element.Modifier;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -18,6 +22,7 @@ public class ObjectTypeGenerator implements ClassGenerator {
 	private final RawJsonType.ObjectType type;
 	@Getter
 	private final List<Property> ownedProperties;
+	private TypeName renderedAdditionalProperties;
 
 	public ObjectTypeGenerator(RawJsonType.ObjectType type) {
 		this.type = type;
@@ -56,6 +61,9 @@ public class ObjectTypeGenerator implements ClassGenerator {
 				resolveTypeName(classNameSpace, property.getName(), property.getMemberType())
 			);
 		}
+		var additionalProperties = type.getAdditionalProperties();
+		if (additionalProperties != null)
+			this.renderedAdditionalProperties = resolveTypeName(classNameSpace, null, additionalProperties);
 	}
 
 	public void writePropertyField(Property property, TypeSpec.Builder typeSpec) {
@@ -90,6 +98,32 @@ public class ObjectTypeGenerator implements ClassGenerator {
 		for (var property : getOwnedProperties()) {
 			writePropertyField(property, typeSpec);
 		}
+		if (renderedAdditionalProperties != null) {
+			writeAdditionalProperties(renderedAdditionalProperties, typeSpec);
+		}
+	}
+
+	public void writeAdditionalProperties(
+		TypeName additionalProperties,
+		TypeSpec.Builder typeSpec) {
+		var mapType = TypeUtils.strMap(additionalProperties);
+		typeSpec
+			.addField(FieldSpec.builder(mapType, "additionalProperties", Modifier.PRIVATE, Modifier.FINAL)
+				.initializer("new $T<>()", LinkedHashMap.class)
+				.build())
+			.addMethod(MethodSpec.methodBuilder("additionalProperties")
+				.addAnnotation(JsonAnyGetter.class)
+				.addModifiers(Modifier.PUBLIC)
+				.returns(mapType)
+				.addStatement("return this.additionalProperties")
+				.build())
+			.addMethod(MethodSpec.methodBuilder("setAdditionalProperty")
+				.addModifiers(Modifier.PUBLIC)
+				.addAnnotation(JsonAnySetter.class)
+				.addParameter(String.class, "name")
+				.addParameter(additionalProperties, "value")
+				.addStatement("this.additionalProperties.put(name, value)")
+				.build());
 	}
 
 	public void writeToString(TypeSpec.Builder typeSpec, ClassNameSpace classNameSpace) {

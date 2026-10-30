@@ -12,7 +12,7 @@ public class JsonMatchers {
 		return new FeatureMatcher<>(stringMatcher, "with asString()", "asString()") {
 			@Override
 			protected String featureValueOf(JsonNode actual) {
-				return actual.asString();
+				return actual.isMissingNode() ? null : actual.asString();
 			}
 		};
 	}

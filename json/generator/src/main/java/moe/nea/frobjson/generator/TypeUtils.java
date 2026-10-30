@@ -1,9 +1,6 @@
 package moe.nea.frobjson.generator;
 
-import com.palantir.javapoet.AnnotationSpec;
-import com.palantir.javapoet.CodeBlock;
-import com.palantir.javapoet.ParameterizedTypeName;
-import com.palantir.javapoet.TypeName;
+import com.palantir.javapoet.*;
 import org.jspecify.annotations.Nullable;
 
 import java.util.List;
@@ -12,7 +9,11 @@ import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 public class TypeUtils {
-	public static TypeName MAP_STR_STR = ParameterizedTypeName.get(Map.class, String.class, String.class);
+	public static TypeName MAP_STR_STR = strMap(ClassName.get(String.class));
+
+	public static TypeName strMap(TypeName valueType) {
+		return ParameterizedTypeName.get(ClassName.get(Map.class), ClassName.get(String.class), valueType);
+	}
 
 	public static TypeName required(
 		boolean required,
