@@ -103,6 +103,10 @@ public class SchemaLibrary {
 		));
 	}
 
+	public SchemaReference loadDefinitions(String path) {
+		return schemaReferences.computeIfAbsent(new SchemaReferencePath(Path.of(path), DataRoot.SPEC), this::resolveDefinition0).get();
+	}
+
 	@SneakyThrows
 	public SchemaReference resolveDefinition(
 		SchemaReferencePath relativeTo,

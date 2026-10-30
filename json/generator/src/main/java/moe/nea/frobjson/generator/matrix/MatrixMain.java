@@ -57,9 +57,6 @@ public class MatrixMain {
 			.override(ctx ->
 				ctx.ifPath(path -> path.endsWith("/core-event-schema/stripped_state.yaml"))
 					.thenUseClass("moe.nea.frobmatrix.event.StrippedStateEvent"));
-//		schemaLibrary.override(ctx ->
-//			ctx.ifPath(path -> path.endsWith("core-event-schema/event.yaml"))
-//				.thenUseClass());
 
 		clientServerApi.generateRoutes("room_summary.yaml");
 		clientServerApi.generateRoutes("wellknown.yaml");
@@ -70,6 +67,8 @@ public class MatrixMain {
 		clientServerApi.generateRoutes("keys.yaml");
 		clientServerApi.generateRoutes("sync.yaml");
 
+		schemaLibrary.loadDefinitions("api/client-server/definitions/m.mentions.yaml");
+
 		var eventGenerator = new EventGenerator(matrixGenerator);
 		eventGenerator.generateEventType("m.dummy.yaml");
 		eventGenerator.generateEventType("m.direct.yaml");
@@ -77,7 +76,7 @@ public class MatrixMain {
 		eventGenerator.generateEventType("m.ignored_user_list.yaml");
 		eventGenerator.generateEventType("m.room.name.yaml");
 		eventGenerator.generateEventType("m.room.pinned_events.yaml");
-		eventGenerator.messageType = eventGenerator.generateEventType("m.room.message.yaml");
+		eventGenerator.messageType = eventGenerator.generateEventType(new SchemaLibrary.SchemaReferencePath(Path.of("m.room.message.yaml"), SchemaLibrary.DataRoot.EXTRA));
 		eventGenerator.generateMessageType("m.room.message$m.text.yaml");
 
 		matrixGenerator.writeAll();

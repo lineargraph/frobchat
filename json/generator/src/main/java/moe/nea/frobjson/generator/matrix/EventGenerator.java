@@ -24,10 +24,14 @@ public class EventGenerator implements ClassGenerator {
 	}
 
 	public ClassNameSpace generateEventType(String fileName) {
-		var referencePath = new SchemaLibrary.SchemaReferencePath(
-			Path.of("event-schemas/schema/" + fileName),
-			SchemaLibrary.DataRoot.SPEC
+		return generateEventType(new SchemaLibrary.SchemaReferencePath(
+				Path.of("event-schemas/schema/" + fileName),
+				SchemaLibrary.DataRoot.SPEC
+			)
 		);
+	}
+
+	public ClassNameSpace generateEventType(SchemaLibrary.SchemaReferencePath referencePath) {
 		var rawEventSchema = YAMLUtils.readFile(
 			generator.schemaLibrary(),
 			referencePath,
@@ -37,7 +41,7 @@ public class EventGenerator implements ClassGenerator {
 			.createChild(NameCollection.foldName(
 				rawEventSchema.getTitle() != null
 					? rawEventSchema.getTitle()
-					: fileName.replace(".yaml", "").replace("m.", ""),
+					: referencePath.relativeToDataRoot().getFileName().toString().replace(".yaml", "").replace("m.", ""),
 				NameCollection.NameType.CLASS_NAME));
 		eventTypeClass.setGenerator(new EventTypeGenerator(rawEventSchema));
 		allTypes.add(eventTypeClass.getClassName());
@@ -79,11 +83,11 @@ public class EventGenerator implements ClassGenerator {
 	public void writeType(TypeSpec.Builder spec, ClassNameSpace classNameSpace) {
 		spec.addField(FieldSpec.builder(TypeUtils.list(WildcardTypeName.subtypeOf(ParameterizedTypeName.get(ClassName.get(EventType.class), WildcardTypeName.subtypeOf(ClassName.OBJECT)))), "TYPES")
 			.addModifiers(Modifier.STATIC)
-			.initializer("$T.asList($L)",
+			.initializer("$T.asList(\n$L\n)",
 				Arrays.class,
 				allTypes.stream()
 					.map(typ -> CodeBlock.of("$T.TYPE", typ))
-					.collect(CodeBlock.joining(", "))
+					.collect(CodeBlock.joining(",\n"))
 			)
 			.build());
 	}
