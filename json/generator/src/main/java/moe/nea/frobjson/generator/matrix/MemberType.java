@@ -51,7 +51,7 @@ public sealed interface MemberType {
 			assert tree.size() == 1;
 			return new FileReference(
 				context.library(),
-				context.folder(),
+				context.file(),
 				tree.get("$ref").asString()
 			);
 		}
@@ -67,22 +67,27 @@ public sealed interface MemberType {
 		}
 		if (tree.has("allOf")) {
 			// Specifically in the context of this matrix spec this typically is used for extending an object in some way.
-			assert tree.size() == 1;
 			var allOfs = tree.get("allOf");
-			if (allOfs.size() == 1) {
-				return ctxt.readTreeAsValue(allOfs.get(0), MemberType.class);
-			}
-			if (allOfs.size() == 2 && allOfs.get(0).size() == 1 && allOfs.get(0).has("$ref") && !allOfs.get(1).has("$ref")) {
+			if ((allOfs.size() == 2 && allOfs.get(0).size() == 1 && allOfs.get(0).has("$ref") && !allOfs.get(1).has("$ref"))) {
+				// TODO: allow extra extends merging here
+				assert new HashSet<>(Arrays.asList(
+					"allOf", "title", "type")).containsAll(tree.propertyNames()) : "Unsupported extra property names in allOf $ref extends branching";
+				assert !tree.has("type") || tree.get("type").asString().equals("object") : "Cannot allOf extends branch non object types";
 				return new MemberType.ExtendsDefinition(
 					tree.has("title") ? tree.get("title").asString() : null,
 					new FileReference(
 						context.library(),
-						context.folder(),
+						context.file(),
 						allOfs.get(0).get("$ref").asString()
 					),
 					(RawJsonType.ObjectType) ctxt.readTreeAsValue(allOfs.get(1), RawJsonType.class)
 				);
 			}
+			if (allOfs.size() == 1) {
+				assert new HashSet<>(Arrays.asList("x-addedInMatrixVersion", "type", "allOf", "title", "example", "description")).containsAll(tree.propertyNames()) : "cannot handle singular allOf alongside other properties";
+				return ctxt.readTreeAsValue(allOfs.get(0), MemberType.class);
+			}
+			assert tree.size() == 1 : "cannot ugly merge with top level properties";
 			return new MemberType.MergeDefinition(
 				context.library(),
 				ctxt.readTreeAsValue(tree.get("allOf"),
@@ -132,7 +137,7 @@ public sealed interface MemberType {
 
 	@RequiredArgsConstructor
 	final class TypeOverride implements DelegatingType, Unlazyable {
-		final Path path;
+		final SchemaLibrary.SchemaReferencePath path;
 		final SchemaLibrary schemaLibrary;
 
 		MemberType delegate;
@@ -174,7 +179,7 @@ public sealed interface MemberType {
 	@RequiredArgsConstructor
 	final class FileReference implements Reference, Unlazyable {
 		private final SchemaLibrary schemaLibrary;
-		private final Path relativeTo;
+		private final SchemaLibrary.SchemaReferencePath inFile;
 		private final String reference;
 		private SchemaReference schemaReference = null;
 
@@ -185,7 +190,7 @@ public sealed interface MemberType {
 
 		@Override
 		public void unlazy() {
-			schemaReference = schemaLibrary.resolveDefinition(relativeTo, reference);
+			schemaReference = schemaLibrary.resolveDefinition(inFile, reference);
 		}
 
 		@Override

@@ -3,6 +3,7 @@ package moe.nea.frobjson.generator.matrix;
 import com.palantir.javapoet.ClassName;
 import lombok.SneakyThrows;
 import moe.nea.frobjson.generator.NameCollection;
+import moe.nea.frobjson.internal.StreamUtil;
 import tools.jackson.databind.JsonNode;
 
 import java.nio.file.Files;
@@ -12,10 +13,10 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 public class SchemaLibrary {
 	private final MatrixGenerator generator;
-	private final String prefix;
 	private final List<Function<MemberType.TypeResolutionContext, MemberType>> memberTypeOverrides = new ArrayList<>();
 
 	public MatrixGenerator matrixGenerator() {
@@ -23,30 +24,50 @@ public class SchemaLibrary {
 	}
 
 	public SchemaLibrary(
-		MatrixGenerator generator,
-		String prefix
+		MatrixGenerator generator
 	) {
 		this.generator = generator;
-		this.prefix = prefix;
 	}
 
-	public String basePackage() {
-		return generator.basePackage() + "." + prefix.replace("-", "").replace("_", "").replace("/", ".");
+//	public String basePackage() {
+//		return generator.basePackage() + "." + prefix.replace("-", "").replace("_", "").replace("/", ".");
+//	}
+
+	//	public Path dataRoot() {
+//		return generator.dataFolder().resolve(prefix);
+//	}
+
+	public enum DataRoot {
+		SPEC,
+		EXTRA
 	}
 
-	public Path dataRoot() {
-		return generator.dataFolder().resolve(prefix);
+	public record SchemaReferencePath(
+		Path relativeToDataRoot,
+		DataRoot dataRoot
+	) {
+		public SchemaReferencePath {
+			assert !relativeToDataRoot.isAbsolute();
+			assert StreamUtil.fromIterable(relativeToDataRoot).noneMatch(it -> it.toString().contains(".."));
+		}
+
+		public Path resolve(MatrixGenerator matrixGenerator) {
+			return switch (dataRoot) {
+				case SPEC -> matrixGenerator.dataFolder().resolve(relativeToDataRoot);
+				case EXTRA -> matrixGenerator.extraSchemasRoot().resolve(relativeToDataRoot);
+			};
+		}
 	}
 
-	private final Map<Path, Lazy<SchemaReference>> schemaReferences = new HashMap<>();
+	private final Map<SchemaReferencePath, Lazy<SchemaReference>> schemaReferences = new HashMap<>();
 
 	private SchemaReference coerceMemberTypeToSchemaReference(
 		MemberType memberType,
-		Path relativePath
+		SchemaReferencePath path
 	) {
 		switch (memberType) {
 			case MemberType.NonReference rawDefinition -> {
-				var packageName = packageName(relativePath);
+				var packageName = packageName(memberType, path);
 				var cns = generator.getPackageNameSpace(packageName)
 					.createChild(NameCollection.foldName(Objects.requireNonNull(rawDefinition.guessTitle(), () -> "cannot find name of " + rawDefinition), NameCollection.NameType.CLASS_NAME));
 				switch (rawDefinition) {
@@ -65,19 +86,18 @@ public class SchemaLibrary {
 			case MemberType.EitherType eitherType ->
 				throw new RuntimeException("Either type definition shall not be tolerated");
 			case MemberType.DelegatingType delegatingType -> {
-				return coerceMemberTypeToSchemaReference(delegatingType.delegate(), relativePath);
+				return coerceMemberTypeToSchemaReference(delegatingType.delegate(), path);
 			}
 		}
 	}
 
 	@SneakyThrows
-	private Lazy<SchemaReference> resolveDefinition0(Path relativePath) {
+	private Lazy<SchemaReference> resolveDefinition0(SchemaReferencePath referencePath) {
 		return generator.pushLazy(Lazy.of(() -> {
 				try {
-					var fileName = dataRoot().resolve(relativePath);
-					return coerceMemberTypeToSchemaReference(YAMLUtils.readFile(this, fileName, MemberType.class), relativePath);
-				} catch (Exception e) {
-					throw new RuntimeException("While reading schema definition from " + relativePath, e);
+					return coerceMemberTypeToSchemaReference(YAMLUtils.readFile(this, referencePath, MemberType.class), referencePath);
+				} catch (Throwable e) {
+					throw new RuntimeException("While reading schema definition from " + referencePath.resolve(matrixGenerator()), e);
 				}
 			}
 		));
@@ -85,22 +105,28 @@ public class SchemaLibrary {
 
 	@SneakyThrows
 	public SchemaReference resolveDefinition(
-		Path relativeTo,
+		SchemaReferencePath relativeTo,
 		String reference) {
-		assert Files.isDirectory(relativeTo) : "Relative root should be the folder containing the file";
-		if (reference.startsWith("LIBRARY_ROOT/")) {
-			relativeTo = dataRoot();
-			reference = reference.substring("LIBRARY_ROOT/".length());
-		}
+		SchemaReferencePath referencePath;
 		var parts = reference.split("#");
 		assert parts.length == 1 : "Nested references not handled yet";
-		var relativePath = dataRoot().relativize(relativeTo).resolve(parts[0]);
-		return schemaReferences.computeIfAbsent(relativePath, this::resolveDefinition0).get();
+		if (parts[0].startsWith("SPEC_ROOT/")) {
+			referencePath = new SchemaReferencePath(
+				Path.of(parts[0].substring("SPEC_ROOT/".length())),
+				DataRoot.SPEC
+			);
+		} else {
+			referencePath = new SchemaReferencePath(
+				relativeTo.relativeToDataRoot.getParent().resolve(parts[0]),
+				relativeTo.dataRoot
+			);
+		}
+		return schemaReferences.computeIfAbsent(referencePath, this::resolveDefinition0).get();
 	}
 
-	private String packageName(Path segments) {
-		var packageName = new StringBuilder(basePackage());
-		for (Path segment : segments) {
+	private String packageName(MemberType memberType, SchemaReferencePath path) {
+		var packageName = new StringBuilder(matrixGenerator().basePackage());
+		for (Path segment : path.relativeToDataRoot()) {
 			var segmentName = segment.toString();
 			if (segmentName.endsWith(".yaml"))
 				segmentName = segmentName.substring(0, segmentName.length() - 5);
@@ -109,14 +135,6 @@ public class SchemaLibrary {
 			packageName.append(".").append(segmentName);
 		}
 		return packageName.toString();
-	}
-
-	public String prefix() {
-		return prefix;
-	}
-
-	public Path extraRoot() {
-		return generator.extraSchemasRoot().resolve(prefix);
 	}
 
 	public static class TypeResolutionContextHelper {
@@ -145,8 +163,12 @@ public class SchemaLibrary {
 			return ifPath(path::equals);
 		}
 
-		public TypeResolutionContextHelper ifPath(Predicate<String> path) {
-			failed = failed || !path.test(library().dataRoot().relativize(context.context().file()).toString());
+		public TypeResolutionContextHelper ifPath(Predicate<String> predicate) {
+			return ifReferencePath(path -> predicate.test(path.relativeToDataRoot.toString()));
+		}
+
+		public TypeResolutionContextHelper ifReferencePath(Predicate<SchemaReferencePath> predicate) {
+			failed = failed || !predicate.test(context.context().file());
 			return this;
 		}
 
@@ -161,10 +183,10 @@ public class SchemaLibrary {
 
 		public void thenUseExtraSchema(String path) {
 			if (!failed)
-				thenUse(library().extraRoot().resolve(path));
+				thenUse(new SchemaReferencePath(Path.of(path), DataRoot.EXTRA));
 		}
 
-		public void thenUse(Path path) {
+		public void thenUse(SchemaReferencePath path) {
 			if (!failed)
 				thenUse(new MemberType.TypeOverride(path, library()));
 		}
@@ -187,11 +209,6 @@ public class SchemaLibrary {
 			if (!failed)
 				thenUse(new MemberType.ClassReference(library(), ClassName.bestGuess(className)));
 		}
-
-		public void thenUseRelativeClass(String relativeClassName) {
-			if (!failed)
-				thenUseClass(library().basePackage() + "." + relativeClassName);
-		}
 	}
 
 	public void override(Consumer<TypeResolutionContextHelper> condition) {
@@ -200,10 +217,6 @@ public class SchemaLibrary {
 			condition.accept(helper);
 			return helper.result();
 		});
-	}
-
-	public String rootPackage() {
-		return basePackage();
 	}
 
 	public MemberType resolveOverride(MemberType.TypeResolutionContext typeResolutionContext) {

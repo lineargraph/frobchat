@@ -23,7 +23,7 @@ public abstract class Route<T> {
 	public HttpResponse<T> execute(MatrixRESTClient client) {
 		try {
 			return client.client().send(asHttpRequest(client), bodyHandler());
-		} catch (IOException | InterruptedException e) {
+		} catch (Throwable e) {
 			throw new RuntimeException(e);
 		}
 	}

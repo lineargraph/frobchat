@@ -19,23 +19,19 @@ public class YAMLUtils {
 	}
 
 	public record FolderContext(
-		Path file,
+		SchemaLibrary.SchemaReferencePath file,
 		SchemaLibrary library,
 		List<Unlazyable> unlazyables
 	) {
 		public FolderContext {
 			Objects.requireNonNull(library);
 		}
-
-		public Path folder() {
-			return file.getParent();
-		}
 	}
 
 	private static ThreadLocal<FolderContext> CURRENT_FOLDER = new ThreadLocal<>();
 
-	public static <T> T withContextFolder(SchemaLibrary library, Path file, Supplier<T> supplier) {
-		assert Files.isRegularFile(file);
+	public static <T> T withContextFolder(SchemaLibrary library, SchemaLibrary.SchemaReferencePath file, Supplier<T> supplier) {
+
 		assert CURRENT_FOLDER.get() == null;
 		var context = new FolderContext(file, library, new ArrayList<>());
 		CURRENT_FOLDER.set(context);
@@ -69,11 +65,11 @@ public class YAMLUtils {
 		})
 		.build();
 
-	public static <T> T readFile(SchemaLibrary library, Path file, Class<T> type) {
+	public static <T> T readFile(SchemaLibrary library, SchemaLibrary.SchemaReferencePath file, Class<T> type) {
 		try {
-			return withContextFolder(library, file, () -> MAPPER.readValue(file, type));
-		} catch (Exception e) {
-			throw new RuntimeException("While reading " + file, e);
+			return withContextFolder(library, file, () -> MAPPER.readValue(file.resolve(library.matrixGenerator()), type));
+		} catch (Throwable e) {
+			throw new RuntimeException("While reading " + file.resolve(library.matrixGenerator()).toAbsolutePath(), e);
 		}
 	}
 }

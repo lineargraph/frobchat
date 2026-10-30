@@ -15,6 +15,7 @@ public class MatrixGenerator {
 	private final String basePackage = "moe.nea.frobmatrix";
 
 	private List<Runnable> queuedTasks = new ArrayList<>();
+	private SchemaLibrary schemaLibrary = new SchemaLibrary(this);
 
 	public void complete() {
 		while (!queuedTasks.isEmpty()) {
@@ -99,5 +100,9 @@ public class MatrixGenerator {
 		for (var pns : nameSpaceMap.values()) {
 			pns.writeTo(this.destinationFolder());
 		}
+	}
+
+	public SchemaLibrary schemaLibrary() {
+		return schemaLibrary;
 	}
 }

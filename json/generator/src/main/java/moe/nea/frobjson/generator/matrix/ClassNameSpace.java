@@ -34,7 +34,7 @@ public final class ClassNameSpace extends NameSpace {
 		emitted = true;
 		try {
 			generator.emitDependencies(this);
-		} catch (Exception e) {
+		} catch (Throwable e) {
 			throw new RuntimeException("While preparing generation of " + getClassName(), e);
 		}
 	}
@@ -72,7 +72,7 @@ public final class ClassNameSpace extends NameSpace {
 				builder.addType(nestedCns.buildClassRecursively());
 			}
 			return builder.build();
-		} catch (Exception e) {
+		} catch (Throwable e) {
 			throw new RuntimeException("While generating TypeSpec for " + getClassName(), e);
 		}
 	}

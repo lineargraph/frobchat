@@ -8,29 +8,26 @@ import java.nio.file.Path;
 @Slf4j
 public class ApiGenerator {
 	private final MatrixGenerator matrixGenerator;
-	private final SchemaLibrary schemaLibrary;
+	private final String prefix;
 
 	public MatrixGenerator matrixGenerator() {
 		return matrixGenerator;
 	}
 
-	public SchemaLibrary schemaLibrary() {
-		return schemaLibrary;
-	}
-
 	public ApiGenerator(MatrixGenerator matrixGenerator, String type) {
 		this.matrixGenerator = matrixGenerator;
-		var prefix = "api/" + type;
-		this.schemaLibrary = new SchemaLibrary(
-			matrixGenerator,
-			prefix
-		);
+		prefix = "api/" + type;
 	}
 
 	public void generateRoutes(String path) {
-		var rawRoutes = YAMLUtils.readFile(schemaLibrary, schemaLibrary.dataRoot().resolve(path), RawOpenApiRoutes.class);
+		var rawRoutes = YAMLUtils.readFile(
+			matrixGenerator.schemaLibrary(),
+			new SchemaLibrary.SchemaReferencePath(Path.of(prefix).resolve(path), SchemaLibrary.DataRoot.SPEC),
+			RawOpenApiRoutes.class);
 		var title = rawRoutes.getInfo().getTitle();
-		var packageName = schemaLibrary.rootPackage() + ".routes." + path.replace("-", "").replace("_", "").replace(".yaml", "");
+		var packageName = matrixGenerator.basePackage() + "."
+			+ prefix.replace("_", "").replace("-", "").replace("/", ".")
+			+ ".routes." + path.replace("-", "").replace("_", "").replace(".yaml", "");
 		var className = NameCollection.foldName(title/* + " Routes"*/, NameCollection.NameType.CLASS_NAME);
 		matrixGenerator.getPackageNameSpace(packageName)
 			.createChild(className)

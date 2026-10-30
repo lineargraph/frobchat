@@ -1,7 +1,7 @@
-description: A summary of the room.
 allOf:
-    -   $ref: LIBRARY_ROOT/definitions/room_summary.yaml
+    -   $ref: SPEC_ROOT/api/client-server/definitions/room_summary.yaml
     -   type: object
+        description: A summary of the room.
         title: RoomSummaryWithMembership
         properties:
             membership:
