@@ -8,6 +8,7 @@ import lombok.Setter;
 import lombok.ToString;
 import moe.nea.frobjson.internal.IterUtil;
 import moe.nea.frobmatrix.event.EventType;
+import moe.nea.frobmatrix.event.RoomEventType;
 import moe.nea.frobmatrix.event.StateEventType;
 import org.jspecify.annotations.Nullable;
 import tools.jackson.databind.JsonNode;
@@ -33,6 +34,7 @@ public class RawEventSchema {
 		return switch (refType) {
 			case "core-event-schema/state_event.yaml" -> ClassName.get(StateEventType.class);
 			case "core-event-schema/event.yaml" -> ClassName.get(EventType.class);
+			case "core-event-schema/room_event.yaml" -> ClassName.get(RoomEventType.class);
 			default -> throw new RuntimeException("Unknown parent reference " + refType);
 		};
 	}

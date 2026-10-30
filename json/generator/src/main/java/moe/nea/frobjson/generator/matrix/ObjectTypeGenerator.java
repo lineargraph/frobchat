@@ -109,6 +109,7 @@ public class ObjectTypeGenerator implements ClassGenerator {
 			.addAnnotations(TypeUtils.deprecatedIf(deprecated))
 			.build());
 		typeSpec.addMethod(MethodSpec.methodBuilder(NameCollection.foldName("set " + fieldName, NameCollection.NameType.METHOD_NAME))
+			.addModifiers(Modifier.PUBLIC)
 			.addParameter(fieldType, fieldName)
 			.addStatement("this.$L = $L", fieldName, fieldName)
 			.build());
@@ -184,6 +185,9 @@ public class ObjectTypeGenerator implements ClassGenerator {
 		writeConstructors(typeSpec);
 	}
 
+	protected void beforeConstructor(MethodSpec.Builder builder) {
+	}
+
 	public void writeConstructor(TypeSpec.Builder typeSpec, List<Property> properties) {
 		var constructor = MethodSpec.constructorBuilder()
 			.addModifiers(Modifier.PUBLIC);
@@ -195,6 +199,7 @@ public class ObjectTypeGenerator implements ClassGenerator {
 		}
 		if (!superArgs.isEmpty())
 			constructor.addStatement("super($L)", CodeBlock.join(superArgs, ", "));
+		beforeConstructor(constructor);
 		for (var prop : properties) {
 			if (prop.getGenerator() != this) continue;
 			constructor

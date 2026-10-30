@@ -77,6 +77,8 @@ public class MatrixMain {
 		eventGenerator.generateEventType("m.ignored_user_list.yaml");
 		eventGenerator.generateEventType("m.room.name.yaml");
 		eventGenerator.generateEventType("m.room.pinned_events.yaml");
+		eventGenerator.messageType = eventGenerator.generateEventType("m.room.message.yaml");
+		eventGenerator.generateMessageType("m.room.message$m.text.yaml");
 
 		matrixGenerator.writeAll();
 	}
