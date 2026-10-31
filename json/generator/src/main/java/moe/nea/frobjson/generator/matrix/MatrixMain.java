@@ -78,6 +78,8 @@ public class MatrixMain {
 		eventGenerator.generateEventType("m.room.pinned_events.yaml");
 		eventGenerator.messageType = eventGenerator.generateEventType(new SchemaLibrary.SchemaReferencePath(Path.of("m.room.message.yaml"), SchemaLibrary.DataRoot.EXTRA));
 		eventGenerator.generateMessageType("m.room.message$m.text.yaml");
+		eventGenerator.generateMessageType("m.room.message$m.emote.yaml");
+		eventGenerator.generateMessageType("m.room.message$m.image.yaml");
 
 		matrixGenerator.writeAll();
 	}
