@@ -39,4 +39,8 @@ public class MatrixRESTClient {
 		authentication.applyTo(builder);
 		return builder;
 	}
+
+	public <T> T execute(Route<T> route) {
+		return route.execute(this).body().get();
+	}
 }

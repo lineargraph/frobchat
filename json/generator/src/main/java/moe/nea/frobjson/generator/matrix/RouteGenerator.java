@@ -6,14 +6,13 @@ import moe.nea.frobjson.generator.TypeUtils;
 import moe.nea.frobmatrix.api.ResponseHelpers;
 import moe.nea.frobmatrix.api.Route;
 import moe.nea.frobmatrix.http.UriBuilder;
+import moe.nea.frobmatrix.util.Pair;
 
 import javax.lang.model.element.Modifier;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.util.HashMap;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
+import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
@@ -23,13 +22,14 @@ public class RouteGenerator implements ClassGenerator {
 	// Route data
 	private final String path;
 	private final String method;
-	private final RawOpenApiRoutes.Route route;
+	public final RawOpenApiRoutes.Route route;
 
 	// Type resolution data
 	private final Map<String, String> parameterNameToField = new HashMap<>();
 	private final Map<RawOpenApiRoutes.ResponseContent, TypeName> responseContentTypes = new HashMap<>();
 	private TypeName requestBodyType;
-	private final Map<RawOpenApiRoutes.Parameter, TypeName> parameterTypes = new HashMap<>();
+	private final Map<RawOpenApiRoutes.Parameter, TypeName> parameterTypes = new LinkedHashMap<>();
+	private TypeName successResponseType;
 
 	// Shared state during generation
 	private final NameCollection fieldNames = new NameCollection(NameCollection.NameType.FIELD_NAME, true);
@@ -45,6 +45,16 @@ public class RouteGenerator implements ClassGenerator {
 		this.path = path;
 		this.method = method;
 		this.route = route;
+	}
+
+	public List<Pair<String, TypeName>> getAllRequestArguments() {
+		return Stream.concat(
+			Stream.ofNullable(requestBodyType)
+				.map(it -> Pair.of("requestBody", requestBodyType)),
+			parameterTypes.entrySet()
+				.stream()
+				.map(it -> Pair.of(it.getKey().getName(), it.getValue()))
+		).toList();
 	}
 
 	private void addBodyMethod(TypeSpec.Builder spec) {
@@ -116,7 +126,9 @@ public class RouteGenerator implements ClassGenerator {
 			if (!isError) {
 				spec.superclass(ParameterizedTypeName.get(ClassName.get(Route.class), resultType));
 				this.responseParser
-					.returns(ParameterizedTypeName.get(ClassName.get(HttpResponse.BodySubscriber.class), resultType))
+					.returns(ParameterizedTypeName.get(ClassName.get(HttpResponse.BodySubscriber.class),
+						ParameterizedTypeName.get(ClassName.get(Supplier.class), resultType)
+					))
 					.addStatement("case $L: return $T.parseJson(responseInfo, $T.class)", statusCode, ResponseHelpers.class, resultType);
 			} else {
 				this.responseParser
@@ -146,8 +158,14 @@ public class RouteGenerator implements ClassGenerator {
 				classNameSpace,
 				statusCode != 200 ? "Response" + statusCode : "Response",
 				content.getSchema());
+			if (statusCode == 200)
+				successResponseType = type;
 			responseContentTypes.put(content, type);
 		}
+	}
+
+	public TypeName getSuccessResponseType() {
+		return successResponseType;
 	}
 
 	@Override

@@ -5,9 +5,10 @@ import org.jspecify.annotations.Nullable;
 
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.util.function.Supplier;
 
 public abstract class Route<T> {
-	protected abstract HttpResponse.BodySubscriber<T> handleResponseInfo(HttpResponse.ResponseInfo responseInfo);
+	protected abstract HttpResponse.BodySubscriber<Supplier<T>> handleResponseInfo(HttpResponse.ResponseInfo responseInfo);
 
 	public abstract Method method();
 
@@ -19,7 +20,7 @@ public abstract class Route<T> {
 		GET, POST, PUT
 	}
 
-	public HttpResponse<T> execute(MatrixRESTClient client) {
+	public HttpResponse<Supplier<T>> execute(MatrixRESTClient client) {
 		try {
 			return client.client().send(asHttpRequest(client), bodyHandler());
 		} catch (Throwable e) {
@@ -49,7 +50,7 @@ public abstract class Route<T> {
 		return HttpRequest.BodyPublishers.noBody();
 	}
 
-	public HttpResponse.BodyHandler<T> bodyHandler() {
+	public HttpResponse.BodyHandler<Supplier<T>> bodyHandler() {
 		return this::handleResponseInfo;
 	}
 

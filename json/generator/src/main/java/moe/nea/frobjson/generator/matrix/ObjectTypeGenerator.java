@@ -141,6 +141,7 @@ public class ObjectTypeGenerator implements ClassGenerator {
 		typeSpec
 			.addField(FieldSpec.builder(mapType, "additionalProperties", Modifier.PRIVATE, Modifier.FINAL)
 				.initializer("new $T<>()", LinkedHashMap.class)
+				.addAnnotation(JsonAnySetter.class) // TODO: setting directly on the field bypasses the pattern check
 				.build())
 			.addMethod(MethodSpec.methodBuilder("additionalProperties")
 				.addAnnotation(JsonAnyGetter.class)
@@ -150,7 +151,6 @@ public class ObjectTypeGenerator implements ClassGenerator {
 				.build())
 			.addMethod(MethodSpec.methodBuilder("setAdditionalProperty")
 				.addModifiers(Modifier.PUBLIC)
-				.addAnnotation(JsonAnySetter.class)
 				.addParameter(keyType, "name")
 				.addParameter(additionalProperties, "value")
 				.addCode(patternCheck)

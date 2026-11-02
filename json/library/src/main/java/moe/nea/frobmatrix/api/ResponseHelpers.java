@@ -12,6 +12,8 @@ import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.SerializationFeature;
 import tools.jackson.databind.json.JsonMapper;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URLEncoder;
 import java.net.http.HttpRequest;
@@ -19,6 +21,8 @@ import java.net.http.HttpResponse;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.concurrent.CompletionException;
+import java.util.function.Supplier;
 import java.util.regex.Pattern;
 
 public class ResponseHelpers {
@@ -142,16 +146,29 @@ public class ResponseHelpers {
 		return MAPPER.readValue(text, tClass);
 	}
 
+	public static <T> T fromJsonStream(InputStream reader, Class<T> tClass) {
+		try (InputStream ignored = reader) {
+			return MAPPER.readValue(reader, tClass);
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
 	public static <T> T fromJsonNode(JsonNode node, Class<T> tClass) {
 		return MAPPER.treeToValue(node, tClass);
 	}
 
-	public static <T> HttpResponse.BodySubscriber<T> parseJson(
+	public static <T> HttpResponse.BodySubscriber<Supplier<T>> parseJson(
 		HttpResponse.ResponseInfo responseInfo,
 		Class<T> dataClass
 	) {
-		return HttpResponse.BodySubscribers.mapping(HttpResponse.BodySubscribers.ofInputStream(), inputStream ->
-			MAPPER.readValue(new InputStreamReader(inputStream, getCharset(responseInfo)), dataClass));
+		return HttpResponse.BodySubscribers.mapping(HttpResponse.BodySubscribers.ofInputStream(), inputStream_ -> () -> {
+			try (var inputStream = inputStream_) {
+				return MAPPER.readValue(new InputStreamReader(inputStream, getCharset(responseInfo)), dataClass);
+			} catch (IOException e) {
+				throw new CompletionException(e);
+			}
+		});
 	}
 
 	public static void checkPattern(String key, Pattern pattern) {

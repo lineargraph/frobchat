@@ -1,0 +1,287 @@
+{
+	"next_batch": "s2492984_64376635_65844_6711276_19866_180_38308_3065139_0_324_2_1_1_1",
+	"account_data": {
+		"events": [
+			{
+				"type": "m.direct",
+				"content": {
+					"@nea:nea.moe": [
+						"!IVeSfvhpVNHxhhhtKk:nea.moe"
+					]
+				}
+			}
+		]
+	},
+	"presence": {
+		"events": [
+			{
+				"type": "m.presence",
+				"sender": "@test:nea.moe",
+				"content": {
+					"presence": "online",
+					"last_active_ago": 47666,
+					"currently_active": true
+				}
+			},
+			{
+				"type": "m.presence",
+				"sender": "@nea:nea.moe",
+				"content": {
+					"presence": "online",
+					"last_active_ago": 52829,
+					"currently_active": true
+				}
+			}
+		]
+	},
+	"device_one_time_keys_count": {
+		"signed_curve25519": 50
+	},
+	"device_unused_fallback_key_types": [
+		"signed_curve25519"
+	],
+	"rooms": {
+		"join": {
+			"!IVeSfvhpVNHxhhhtKk:nea.moe": {
+				"timeline": {
+					"events": [
+						{
+							"content": {
+								"body": "purrs",
+								"m.mentions": {},
+								"msgtype": "m.emote"
+							},
+							"event_id": "$gbh_tAGSvgqqDnoCbd8yy02QL6f9PjbEKxmNQ5feR7Y",
+							"origin_server_ts": 1793402775684,
+							"sender": "@nea:nea.moe",
+							"type": "m.room.message",
+							"unsigned": {
+								"age": 224753814,
+								"membership": "join"
+							}
+						}
+					],
+					"prev_batch": "s2033105_64376635_65844_6711276_19866_180_38308_3065139_0_324_2_1_1_1",
+					"limited": true
+				},
+				"state": {
+					"events": [
+						{
+							"content": {
+								"guest_access": "can_join"
+							},
+							"event_id": "$nv59FgP5R3lOJ3Py2t5k8tA1MtULuZYgTRPD2bOoNkE",
+							"origin_server_ts": 1769356989174,
+							"sender": "@nea:nea.moe",
+							"state_key": "",
+							"type": "m.room.guest_access",
+							"unsigned": {
+								"age": 24270540324
+							}
+						},
+						{
+							"content": {
+								"join_rule": "invite"
+							},
+							"event_id": "$Y96oZTK3Dc3Fd4sB19Gn9YYDXX6aSuRYyLeljwro9XM",
+							"origin_server_ts": 1769356989173,
+							"sender": "@nea:nea.moe",
+							"state_key": "",
+							"type": "m.room.join_rules",
+							"unsigned": {
+								"age": 24270540325
+							}
+						},
+						{
+							"content": {
+								"creator": "@nea:nea.moe",
+								"room_version": "10"
+							},
+							"event_id": "$GxT7dlQIlpcBL7N2Gr-VYuZuWsJznps-jXOpptZhp5U",
+							"origin_server_ts": 1769356988950,
+							"sender": "@nea:nea.moe",
+							"state_key": "",
+							"type": "m.room.create",
+							"unsigned": {
+								"age": 24270540548
+							}
+						},
+						{
+							"content": {
+								"displayname": "test",
+								"membership": "join"
+							},
+							"event_id": "$NHT7Fx0UMPzthXfR3FapJXBEiNoo1mzYxuH6XKnmG8g",
+							"origin_server_ts": 1771082649311,
+							"sender": "@test:nea.moe",
+							"state_key": "@test:nea.moe",
+							"type": "m.room.member",
+							"unsigned": {
+								"age": 22544880187,
+								"replaces_state": "$CFAQQ5U9lkEoG4Khn0uxy6aMb-ETtbObK_8TJUQ5mrE"
+							}
+						},
+						{
+							"content": {
+								"history_visibility": "shared"
+							},
+							"event_id": "$_FNqEZymM0ORoIgRgkLxXDmCvi7TK66Qy8BLCL-xXhk",
+							"origin_server_ts": 1769356989174,
+							"sender": "@nea:nea.moe",
+							"state_key": "",
+							"type": "m.room.history_visibility",
+							"unsigned": {
+								"age": 24270540324
+							}
+						},
+						{
+							"content": {
+								"ban": 50,
+								"events": {
+									"m.room.avatar": 50,
+									"m.room.canonical_alias": 50,
+									"m.room.encryption": 100,
+									"m.room.history_visibility": 100,
+									"m.room.name": 50,
+									"m.room.power_levels": 100,
+									"m.room.server_acl": 100,
+									"m.room.tombstone": 100
+								},
+								"events_default": 0,
+								"historical": 100,
+								"invite": 0,
+								"kick": 50,
+								"redact": 50,
+								"state_default": 50,
+								"users": {
+									"@nea:nea.moe": 100,
+									"@test:nea.moe": 100
+								},
+								"users_default": 0
+							},
+							"event_id": "$cQXJ68ApXFwAw82Mqwv6V9ZA3GDz_ME26glXPga9Ovw",
+							"origin_server_ts": 1769356989157,
+							"sender": "@nea:nea.moe",
+							"state_key": "",
+							"type": "m.room.power_levels",
+							"unsigned": {
+								"age": 24270540341
+							}
+						},
+						{
+							"content": {
+								"avatar_url": "mxc://nea.moe/KFMlPqigJgXINXihZyKZrMdt",
+								"displayname": "oh lol",
+								"membership": "join"
+							},
+							"event_id": "$Z2aUn2dm70EslBcN-bcLP_HC82GMkCclUhaLewddPgg",
+							"origin_server_ts": 1788808936637,
+							"sender": "@nea:nea.moe",
+							"state_key": "@nea:nea.moe",
+							"type": "m.room.member",
+							"unsigned": {
+								"age": 4818592861,
+								"prev_content": {
+									"avatar_url": "mxc://nea.moe/KFMlPqigJgXINXihZyKZrMdt",
+									"displayname": "test",
+									"membership": "join"
+								},
+								"prev_sender": "@nea:nea.moe",
+								"replaces_state": "$8VnZW_QC1QEZliKFHI2tsf6m2n7Hl9Iw0mxDFtUkAsA"
+							}
+						}
+					]
+				},
+				"account_data": {
+					"events": []
+				},
+				"ephemeral": {
+					"events": [
+						{
+							"type": "m.receipt",
+							"content": {
+								"$THk1Xp-u1sinGE6qriqZCpIqFSyeUhPnZWKq77F7xA4": {
+									"m.read": {
+										"@test:nea.moe": {
+											"ts": 1771082667698
+										}
+									}
+								},
+								"$gbh_tAGSvgqqDnoCbd8yy02QL6f9PjbEKxmNQ5feR7Y": {
+									"m.read": {
+										"@nea:nea.moe": {
+											"ts": 1793402790329
+										}
+									}
+								}
+							}
+						}
+					]
+				},
+				"unread_notifications": {
+					"notification_count": 30,
+					"highlight_count": 0
+				},
+				"summary": {}
+			}
+		},
+		"invite": {
+			"!wnXQFbnmDsxnTfnBEE:nea.moe": {
+				"invite_state": {
+					"events": [
+						{
+							"content": {
+								"creator": "@nea:nea.moe",
+								"room_version": "10"
+							},
+							"sender": "@nea:nea.moe",
+							"state_key": "",
+							"type": "m.room.create"
+						},
+						{
+							"content": {
+								"allow": [
+									{
+										"room_id": "!X6wWQWx-lZHdMKqoYZzMI9GA9AAVTJKtoTAvuWrOUX8",
+										"type": "m.room_membership"
+									}
+								],
+								"join_rule": "restricted"
+							},
+							"sender": "@nea:nea.moe",
+							"state_key": "",
+							"type": "m.room.join_rules"
+						},
+						{
+							"content": {
+								"name": "mmmmmmmmmmmm"
+							},
+							"sender": "@nea:nea.moe",
+							"state_key": "",
+							"type": "m.room.name"
+						},
+						{
+							"content": {
+								"avatar_url": "mxc://nea.moe/KFMlPqigJgXINXihZyKZrMdt",
+								"displayname": "mx+b",
+								"membership": "join"
+							},
+							"sender": "@nea:nea.moe",
+							"state_key": "@nea:nea.moe",
+							"type": "m.room.member"
+						},
+						{
+							"type": "m.room.member",
+							"state_key": "@test:nea.moe",
+							"content": {
+								"displayname": "test",
+								"membership": "invite"
+							},
+							"sender": "@nea:nea.moe"
+						}
+					]
+				}
+			}
+		}
+	}
+}

@@ -13,6 +13,18 @@ public class NameCollection {
 	public final boolean strict;
 	private final Set<String> names = new HashSet<>();
 
+	public static String foldMethod(String name) {
+		return foldName(name, NameType.METHOD_NAME);
+	}
+
+	public static String foldClass(String name) {
+		return foldName(name, NameType.CLASS_NAME);
+	}
+
+	public static String foldField(String name) {
+		return foldName(name, NameType.FIELD_NAME);
+	}
+
 	public enum NameType {
 		CLASS_NAME,
 		METHOD_NAME,
