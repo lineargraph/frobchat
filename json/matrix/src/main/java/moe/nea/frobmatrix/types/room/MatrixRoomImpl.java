@@ -70,12 +70,12 @@ public class MatrixRoomImpl implements MatrixRoom {
 		this.roomId = roomId;
 	}
 
+	@SuppressWarnings("unchecked")
 	private <T extends EventContent<T>> BehaviorSubject<T> getStateEvent0(EventType<T> eventType, String stateEventKey) {
 		var key = new StateEventKey<T>(
 			eventType,
 			stateEventKey
 		);
-		//noinspection unchecked
 		return (BehaviorSubject<T>) roomState.computeIfAbsent(key, it -> BehaviorSubject.create());
 	}
 

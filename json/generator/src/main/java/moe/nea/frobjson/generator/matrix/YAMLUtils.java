@@ -44,7 +44,7 @@ public class YAMLUtils {
 		}
 	}
 
-	private final static ObjectMapper MAPPER = new YAMLMapper()
+	public final static ObjectMapper MAPPER = new YAMLMapper()
 		.rebuild()
 		.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
 		.addModule(new JacksonModule() {

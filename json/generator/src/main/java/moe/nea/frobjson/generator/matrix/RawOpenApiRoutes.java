@@ -66,6 +66,8 @@ public class RawOpenApiRoutes {
 		private Void security;
 		@JsonProperty("x-addedInMatrixVersion")
 		private String addedInMatrixVersion;
+		@JsonProperty("x-changedInMatrixVersion")
+		private Void changedInMatrixVersion;
 		private List<Parameter> parameters = List.of();
 		private @Nullable RequestBody requestBody;
 	}
@@ -109,6 +111,8 @@ public class RawOpenApiRoutes {
 	public static class Response {
 		private String description;
 		private Map<String, ResponseContent> content = new HashMap<>();
+		@JsonProperty("x-addedInMatrixVersion")
+		private String addedInMatrixVersion;
 	}
 
 	@Getter

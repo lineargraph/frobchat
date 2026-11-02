@@ -32,6 +32,9 @@ ktor = "3.5.0"
 javapoet = "0.16.0"
 gson = "2.14.0"
 [libraries]
+gemsfx = { module = "com.dlsc.gemsfx:gemsfx", version = "4.5.0" }
+atlantafx-base = { module = "io.github.mkpaz:atlantafx-base", version = "3.0.0" }
+rxjavafx = {module="org.pdfsam.rxjava3:rxjavafx",version = "3.0.3"}
 rxjava = { module = "io.reactivex.rxjava3:rxjava", version = "3.1.12" }
 jbAnnotations = { module = "org.jetbrains:annotations", version = "26.1.0" }
 lombok = { module = "org.projectlombok:lombok", version = "1.18.48" }

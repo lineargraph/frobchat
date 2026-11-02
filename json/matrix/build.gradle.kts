@@ -4,6 +4,8 @@ plugins {
 dependencies {
 	api(projects.json.library)
 	api(libs.rxjava)
+	api(libs.rxjavafx)
+	implementation(libs.slf4j.api)
 	testImplementation(libs.junit)
 	testImplementation(libs.hamcrest)
 	testRuntimeOnly(libs.junit.platform)

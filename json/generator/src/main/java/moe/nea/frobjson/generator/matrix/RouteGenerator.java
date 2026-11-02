@@ -7,6 +7,7 @@ import moe.nea.frobmatrix.api.ResponseHelpers;
 import moe.nea.frobmatrix.api.Route;
 import moe.nea.frobmatrix.http.UriBuilder;
 import moe.nea.frobmatrix.util.Pair;
+import tools.jackson.core.type.TypeReference;
 
 import javax.lang.model.element.Modifier;
 import java.net.http.HttpRequest;
@@ -78,7 +79,7 @@ public class RouteGenerator implements ClassGenerator {
 				.returns(HttpRequest.BodyPublisher.class)
 				.addAnnotation(Override.class)
 				.addModifiers(Modifier.PUBLIC)
-				.addStatement("return $T.publishJson(requestBody, $T.class)", ResponseHelpers.class, requestBodyType)
+				.addStatement("return $T.publishJson(requestBody)", ResponseHelpers.class)
 				.build());
 	}
 
@@ -129,7 +130,7 @@ public class RouteGenerator implements ClassGenerator {
 					.returns(ParameterizedTypeName.get(ClassName.get(HttpResponse.BodySubscriber.class),
 						ParameterizedTypeName.get(ClassName.get(Supplier.class), resultType)
 					))
-					.addStatement("case $L: return $T.parseJson(responseInfo, $T.class)", statusCode, ResponseHelpers.class, resultType);
+					.addStatement("case $L: return $T.parseJson(responseInfo, new $T<$T>() {})", statusCode, ResponseHelpers.class, TypeReference.class, resultType);
 			} else {
 				this.responseParser
 					.addStatement("case $L: return $T.parseErrorJson(responseInfo, $T.class)", statusCode, ResponseHelpers.class, resultType);

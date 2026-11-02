@@ -6,10 +6,9 @@ import moe.nea.frobmatrix.Either;
 import moe.nea.frobmatrix.http.IntegerUriParameter;
 import moe.nea.frobmatrix.http.StringUriParameter;
 import org.jspecify.annotations.Nullable;
+import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.JsonNode;
-import tools.jackson.databind.MapperFeature;
 import tools.jackson.databind.ObjectMapper;
-import tools.jackson.databind.SerializationFeature;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.io.IOException;
@@ -31,7 +30,7 @@ public class ResponseHelpers {
 		.changeDefaultPropertyInclusion(it -> it.withValueInclusion(JsonInclude.Include.NON_NULL))
 		.build();
 
-	public static <T> HttpRequest.BodyPublisher publishJson(T body, Class<T> bodyType) {
+	public static <T> HttpRequest.BodyPublisher publishJson(T body) {
 		return HttpRequest.BodyPublishers.ofByteArray(MAPPER.writeValueAsBytes(body));
 	}
 
@@ -161,6 +160,19 @@ public class ResponseHelpers {
 	public static <T> HttpResponse.BodySubscriber<Supplier<T>> parseJson(
 		HttpResponse.ResponseInfo responseInfo,
 		Class<T> dataClass
+	) {
+		return HttpResponse.BodySubscribers.mapping(HttpResponse.BodySubscribers.ofInputStream(), inputStream_ -> () -> {
+			try (var inputStream = inputStream_) {
+				return MAPPER.readValue(new InputStreamReader(inputStream, getCharset(responseInfo)), dataClass);
+			} catch (IOException e) {
+				throw new CompletionException(e);
+			}
+		});
+	}
+
+	public static <T> HttpResponse.BodySubscriber<Supplier<T>> parseJson(
+		HttpResponse.ResponseInfo responseInfo,
+		TypeReference<T> dataClass
 	) {
 		return HttpResponse.BodySubscribers.mapping(HttpResponse.BodySubscribers.ofInputStream(), inputStream_ -> () -> {
 			try (var inputStream = inputStream_) {

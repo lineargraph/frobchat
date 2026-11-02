@@ -53,6 +53,14 @@ public class MatrixMain {
 			.override(ctx ->
 				ctx.ifPath(path -> path.endsWith("/core-event-schema/event.yaml"))
 					.thenUseClass("moe.nea.frobmatrix.eventschemas.schema.coreeventschema.event.Event"));
+		schemaLibrary
+			.override(ctx ->
+				ctx.ifPath("api/client-server/definitions/request_email_validation.yaml")
+					.thenUseClass("java.lang.Void"));
+		schemaLibrary
+			.override(ctx ->
+				ctx.ifPath("api/client-server/definitions/request_msisdn_validation.yaml")
+					.thenUseClass("java.lang.Void"));
 //		schemaLibrary
 //			.override(ctx ->
 //				ctx.ifPath(path -> path.endsWith("/core-event-schema/stripped_state.yaml"))
@@ -66,6 +74,9 @@ public class MatrixMain {
 		clientServerApi.generateRoutes("login.yaml");
 		clientServerApi.generateRoutes("keys.yaml");
 		clientServerApi.generateRoutes("sync.yaml");
+		clientServerApi.generateRoutes("account-data.yaml");
+		clientServerApi.generateRoutes("profile.yaml");
+		clientServerApi.generateRoutes("password_management.yaml");
 
 		schemaLibrary.loadDefinitions("api/client-server/definitions/m.mentions.yaml");
 

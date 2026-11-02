@@ -17,7 +17,7 @@ public abstract class Route<T> {
 	public abstract String rawPath();
 
 	public enum Method {
-		GET, POST, PUT
+		GET, POST, PUT, DELETE
 	}
 
 	public HttpResponse<Supplier<T>> execute(MatrixRESTClient client) {

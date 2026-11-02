@@ -30,11 +30,11 @@ public class RouteCategoryGenerator implements ClassGenerator {
 				.build());
 		for (var rns : routes) {
 			var routeGenerator = (RoutesGenerator) rns.getGenerator();
-			spec.addMethod(MethodSpec.methodBuilder(NameCollection.foldMethod(rns.getClassName().simpleName()))
-				.addModifiers(Modifier.PUBLIC)
-				.returns(rns.getClassName())
-				.addStatement("return new $T(this.restClient)", rns.getClassName())
-				.build());
+//			spec.addMethod(MethodSpec.methodBuilder(NameCollection.foldMethod(rns.getClassName().simpleName()))
+//				.addModifiers(Modifier.PUBLIC)
+//				.returns(rns.getClassName())
+//				.addStatement("return new $T(this.restClient)", rns.getClassName())
+//				.build());
 		}
 	}
 }

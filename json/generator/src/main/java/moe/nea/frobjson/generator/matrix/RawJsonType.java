@@ -1,10 +1,13 @@
 package moe.nea.frobjson.generator.matrix;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonSetter;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.palantir.javapoet.ClassName;
 import lombok.*;
 import org.jspecify.annotations.Nullable;
+import tools.jackson.core.TreeNode;
 import tools.jackson.databind.JsonNode;
 
 import java.util.*;
@@ -84,6 +87,22 @@ public sealed abstract class RawJsonType {
 	public static final class ObjectType extends RawJsonType {
 		private Map<String, MemberType> properties = new HashMap<>();
 		private @Nullable MemberType additionalProperties = null;
+
+		@JsonSetter("additionalProperties")
+		public void setAdditionalProperties(JsonNode node) {
+			if (node.isBoolean()) {
+				if (node.asBoolean()) {
+					var cr = new MemberType.ClassReference(YAMLUtils.getContext().library(), ClassName.get(JsonNode.class));
+					additionalProperties = cr;
+					cr.unlazy();
+				} else {
+					additionalProperties = null;
+				}
+			} else {
+				additionalProperties = YAMLUtils.MAPPER.treeToValue((TreeNode) node, MemberType.class);
+			}
+		}
+
 		private Set<String> required = new HashSet<>();
 		private Map<String, MemberType> patternProperties = new HashMap<>();
 		private @Nullable Integer minProperties;
