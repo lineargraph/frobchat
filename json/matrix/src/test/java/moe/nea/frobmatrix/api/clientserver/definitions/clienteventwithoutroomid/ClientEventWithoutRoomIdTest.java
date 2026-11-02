@@ -29,8 +29,7 @@ class ClientEventWithoutRoomIdTest {
 			    "age": 552,
 			    "membership": "join",
 			    "transaction_id": "m1793394278429.24"
-			  },
-			  "room_id": "!oY0Y4kgb3boFnEhWvHZGsVNK1ZkHgV9LA7rjl28j95Y"
+			  }
 			}
 			""";
 		var clientEvent = ResponseHelpers.fromJsonString(json, ClientEventWithoutRoomId.class);

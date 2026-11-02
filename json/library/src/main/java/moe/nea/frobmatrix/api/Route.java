@@ -1,5 +1,6 @@
 package moe.nea.frobmatrix.api;
 
+import moe.nea.frobmatrix.http.UriBuilder;
 import org.jspecify.annotations.Nullable;
 
 import java.io.IOException;
@@ -12,9 +13,9 @@ public abstract class Route<T> {
 
 	public abstract Method method();
 
-	public abstract String rawPath();
+	public abstract UriBuilder appendUriTo(UriBuilder uriBuilder);
 
-	public abstract String path();
+	public abstract String rawPath();
 
 	public enum Method {
 		GET, POST, PUT
@@ -33,7 +34,7 @@ public abstract class Route<T> {
 	}
 
 	public HttpRequest.Builder buildHttpRequest(MatrixRESTClient client) {
-		var builder = HttpRequest.newBuilder(URI.create(client.basePath() + path()))
+		var builder = HttpRequest.newBuilder(appendUriTo(client.createUriBuilder()).build())
 			.method(method().name(), bodyPublisher())
 			.header("accept", "application/json");
 		var contentType = contentType();

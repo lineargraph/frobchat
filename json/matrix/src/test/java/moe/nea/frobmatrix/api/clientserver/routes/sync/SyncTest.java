@@ -4,6 +4,7 @@ import moe.nea.frobmatrix.api.clientserver.definitions.clienteventwithoutroomid.
 import moe.nea.frobmatrix.event.Event;
 import moe.nea.frobmatrix.event.EventContent;
 import moe.nea.frobmatrix.event.RawEventContent;
+import moe.nea.frobmatrix.http.UriBuilder;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -44,7 +45,7 @@ class SyncTest {
 			true
 		);
 		assertThat(
-			sync.path(),
+			sync.appendUriTo(new UriBuilder("https", null)).build().toString(),
 			allOf(
 				containsString("use_state_after=true"),
 				not(containsString("since"))

@@ -3,17 +3,15 @@ package moe.nea.frobjson.generator.matrix;
 import com.palantir.javapoet.ClassName;
 import lombok.SneakyThrows;
 import moe.nea.frobjson.generator.NameCollection;
-import moe.nea.frobjson.internal.StreamUtil;
+import moe.nea.frobmatrix.util.StreamUtil;
 import tools.jackson.databind.JsonNode;
 
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
-import java.util.stream.Stream;
 
 public class SchemaLibrary {
 	private final MatrixGenerator generator;

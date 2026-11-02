@@ -5,6 +5,7 @@ import moe.nea.frobjson.generator.NameCollection;
 import moe.nea.frobjson.generator.TypeUtils;
 import moe.nea.frobmatrix.api.ResponseHelpers;
 import moe.nea.frobmatrix.api.Route;
+import moe.nea.frobmatrix.http.UriBuilder;
 
 import javax.lang.model.element.Modifier;
 import java.net.http.HttpRequest;
@@ -72,45 +73,32 @@ public class RouteGenerator implements ClassGenerator {
 	}
 
 	private void addPathMethod(TypeSpec.Builder spec) {
-		var method = MethodSpec.methodBuilder("path")
+		var method = MethodSpec.methodBuilder("appendUriTo")
 			.addModifiers(Modifier.PUBLIC)
-			.returns(String.class)
+			.returns(UriBuilder.class)
+			.addParameter(UriBuilder.class, "uriBuilder")
 			.addAnnotation(Override.class);
-		method.addCode("return ");
+		method.addCode("return uriBuilder");
 		{
 			var pathMatcher = PATH_PATTERN.matcher(path);
 			int lastAppendPosition = 0;
-			boolean isFirst = true;
 			while (pathMatcher.find()) {
-				if (isFirst) {
-					isFirst = false;
-				} else {
-					method.addCode(" + ");
-				}
 				var skipped = path.substring(lastAppendPosition, pathMatcher.start());
-				if (!skipped.isEmpty())
-					method.addCode("$S + ", skipped);
-				method.addCode("$T.urlEncodeParameter($L)", ResponseHelpers.class, Objects.requireNonNull(parameterNameToField.get(pathMatcher.group(1))));
+				if (!skipped.isEmpty()) {
+					method.addCode(".rawPath($S)", skipped);
+				}
+				method.addCode(".pathComponent($L)", Objects.requireNonNull(parameterNameToField.get(pathMatcher.group(1))));
 				lastAppendPosition = pathMatcher.end();
 			}
 			var rest = path.substring(lastAppendPosition);
 			if (!rest.isEmpty()) {
-				if (!isFirst)
-					method.addCode(" + ");
-				method.addCode("$S", rest);
+				method.addCode(".rawPath($S)", rest);
 			}
 		}
 
-		boolean hadQ = false;
 		for (var parameter : route.getParameters()) {
 			if (parameter.getIn() != RawOpenApiRoutes.ParameterLocation.QUERY) continue;
-			method.addCode(
-				" + $S + $T.urlEncodeNamedParameter($S, $L)",
-				(hadQ ? "&" : "?"),
-				ResponseHelpers.class,
-				parameter.getName(),
-				Objects.requireNonNull(parameterNameToField.get(parameter.getName())));
-			hadQ = true;
+			method.addCode(".appendQueryParameter($S, $L)", parameter.getName(), Objects.requireNonNull(parameterNameToField.get(parameter.getName())));
 		}
 
 		method.addCode(";");

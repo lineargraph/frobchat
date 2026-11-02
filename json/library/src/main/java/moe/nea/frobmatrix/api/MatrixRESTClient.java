@@ -1,5 +1,7 @@
 package moe.nea.frobmatrix.api;
 
+import moe.nea.frobmatrix.http.UriBuilder;
+
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 
@@ -29,8 +31,8 @@ public class MatrixRESTClient {
 		return homeServer;
 	}
 
-	public String basePath() {
-		return "https://" + homeServer();
+	public UriBuilder createUriBuilder() {
+		return new UriBuilder("https", homeServer);
 	}
 
 	public HttpRequest.Builder postProcess(HttpRequest.Builder builder) {

@@ -6,15 +6,13 @@ import com.palantir.javapoet.ClassName;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
-import moe.nea.frobjson.internal.IterUtil;
+import moe.nea.frobmatrix.util.IterUtil;
 import moe.nea.frobmatrix.event.EventType;
 import moe.nea.frobmatrix.event.RoomEventType;
 import moe.nea.frobmatrix.event.StateEventType;
 import org.jspecify.annotations.Nullable;
-import tools.jackson.databind.JsonNode;
 
 import java.util.List;
-import java.util.Map;
 
 /// Fake class that wraps all of the interesting bits of the event schema declaration
 @Getter

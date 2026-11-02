@@ -3,7 +3,7 @@ package moe.nea.frobjson.generator.matrix;
 import com.palantir.javapoet.*;
 import moe.nea.frobjson.generator.NameCollection;
 import moe.nea.frobjson.generator.TypeUtils;
-import moe.nea.frobjson.internal.IterUtil;
+import moe.nea.frobmatrix.util.IterUtil;
 import moe.nea.frobmatrix.event.EventType;
 
 import javax.lang.model.element.Modifier;

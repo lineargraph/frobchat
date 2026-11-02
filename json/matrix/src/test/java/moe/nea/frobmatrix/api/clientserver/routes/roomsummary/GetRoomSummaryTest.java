@@ -2,6 +2,7 @@ package moe.nea.frobmatrix.api.clientserver.routes.roomsummary;
 
 import moe.nea.frobmatrix.Either;
 import moe.nea.frobmatrix.MxRoomAlias;
+import moe.nea.frobmatrix.http.UriBuilder;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -19,8 +20,8 @@ class GetRoomSummaryTest {
 			List.of("nea.moe", "zimward.moe")
 		);
 		assertThat(
-			summary.path(),
-			equalTo("/_matrix/client/v1/room_summary/%23scrolling-space%3Amatrix.org?via=nea.moe&via=zimward.moe")
+			summary.appendUriTo(new UriBuilder("https", null)).build().toString(),
+			equalTo("https:/_matrix/client/v1/room_summary/%23scrolling-space%3Amatrix.org?via=nea.moe&via=zimward.moe")
 		);
 	}
 }
