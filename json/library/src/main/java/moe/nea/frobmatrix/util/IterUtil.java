@@ -10,7 +10,18 @@ import java.util.function.Supplier;
 public class IterUtil {
 
 	public static <T> Iterable<T> wrapOnceIterator(Iterator<T> iterator) {
-		return () -> iterator;
+		return new Iterable<>() {
+			boolean iteratorUsed = false;
+
+			@Override
+			public @NonNull Iterator<T> iterator() {
+				if (iteratorUsed) {
+					throw new RuntimeException("This iterator can only be used once");
+				}
+				iteratorUsed = true;
+				return iterator;
+			}
+		};
 	}
 
 	public static <T extends @NonNull Object> Iterable<T> createPollOnceIterable(Supplier<? extends @Nullable T> supplier) {
@@ -18,7 +29,7 @@ public class IterUtil {
 	}
 
 	public static <T extends @NonNull Object> Iterator<T> createPollIterator(Supplier<? extends @Nullable T> supplier) {
-		return new Iterator<T>() {
+		return new Iterator<>() {
 			boolean didFetch = false;
 			@Nullable T next = null;
 

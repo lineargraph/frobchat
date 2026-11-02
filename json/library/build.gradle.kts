@@ -11,5 +11,12 @@ dependencies {
 	api(libs.jackson.dataformat.yaml)
 	api(libs.gson)
 	api(libs.slf4j.api)
+	testImplementation(libs.junit)
+	testImplementation(libs.hamcrest)
+	testRuntimeOnly(libs.junit.platform)
 }
 java.withSourcesJar()
+
+tasks.test {
+	useJUnitPlatform()
+}

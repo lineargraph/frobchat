@@ -3,8 +3,6 @@ package moe.nea.frobmatrix.api;
 import moe.nea.frobmatrix.http.UriBuilder;
 import org.jspecify.annotations.Nullable;
 
-import java.io.IOException;
-import java.net.URI;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 
