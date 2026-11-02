@@ -34,8 +34,10 @@ public class MatrixClient {
 
 	public MatrixRoom getRoom(MxRoomId roomId) {
 		return rooms.computeIfAbsent(roomId, roomId1 -> {
-			this.storage.getRoomState(roomId1);
-			return new MatrixRoomImpl(this, roomId1);
+			var oldRoomState = this.storage.getRoomState(roomId1);
+			var roomImpl = new MatrixRoomImpl(this, roomId1);
+			roomImpl.setStateEvents(oldRoomState);
+			return roomImpl;
 		});
 	}
 
