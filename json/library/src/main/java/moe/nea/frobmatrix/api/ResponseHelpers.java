@@ -1,5 +1,6 @@
 package moe.nea.frobmatrix.api;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import moe.nea.frobmatrix.http.BooleanUriParameter;
 import moe.nea.frobmatrix.Either;
 import moe.nea.frobmatrix.http.IntegerUriParameter;
@@ -8,6 +9,7 @@ import org.jspecify.annotations.Nullable;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.MapperFeature;
 import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.SerializationFeature;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.io.InputStreamReader;
@@ -22,6 +24,7 @@ import java.util.regex.Pattern;
 public class ResponseHelpers {
 	private final static ObjectMapper MAPPER = new JsonMapper()
 		.rebuild()
+		.changeDefaultPropertyInclusion(it -> it.withValueInclusion(JsonInclude.Include.NON_NULL))
 		.build();
 
 	public static <T> HttpRequest.BodyPublisher publishJson(T body, Class<T> bodyType) {

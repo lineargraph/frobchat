@@ -3,6 +3,7 @@ package moe.nea.frobjson.generator.matrix;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.palantir.javapoet.*;
+import moe.nea.frobmatrix.event.BaseEventContent;
 import moe.nea.frobmatrix.event.EventContent;
 
 import javax.lang.model.element.Modifier;
@@ -62,9 +63,8 @@ public class EventTypeGenerator extends ObjectTypeGenerator {
 	@Override
 	public void writeType(TypeSpec.Builder spec, ClassNameSpace classNameSpace) {
 		super.writeType(spec, classNameSpace);
-		spec.addSuperinterface(ParameterizedTypeName.get(
-			ClassName.get(EventContent.class), classNameSpace.getClassName()
-		));
+		spec.addSuperinterface(ParameterizedTypeName.get(ClassName.get(EventContent.class), classNameSpace.getClassName()));
+		spec.superclass(BaseEventContent.class);
 		spec.addMethod(MethodSpec.methodBuilder("type")
 			.addModifiers(Modifier.PUBLIC)
 			.addAnnotation(Override.class)
@@ -80,6 +80,7 @@ public class EventTypeGenerator extends ObjectTypeGenerator {
 				.addMember("include", "$T.As.PROPERTY", JsonTypeInfo.class)
 				.addMember("property", "$S", "msgtype")
 				.addMember("visible", "true")
+				.addMember("defaultImpl", "$T.class", classNameSpace.getClassName())
 				.build());
 			spec.addAnnotation(AnnotationSpec.builder(JsonSubTypes.class)
 				.addMember("value", "{\n$L\n}",
