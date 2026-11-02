@@ -1,12 +1,13 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Text?>
 <?import javafx.scene.image.ImageView?>
+<?import com.dlsc.gemsfx.AvatarView?>
 <VBox
 	fx:controller="moe.nea.frobmatrix.ui.view.WelcomePanel"
 	xmlns="http://javafx.com/javafx/19"
 	xmlns:fx="http://javafx.com/fxml/1"
 	alignment="CENTER"
 >
-	<Text text="${controller.displayName}" styleClass="title-1"/>
-	<ImageView fx:id="image"/>
+	<Text fx:id="welcome" styleClass="title-1"/>
+	<AvatarView fx:id="avatar"/>
 </VBox>

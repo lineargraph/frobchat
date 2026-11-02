@@ -112,6 +112,32 @@ public class ResponseHelpers {
 		return new ContentType("application/octet-stream", Map.of());
 	}
 
+	public record ContentDisposition(
+		String destination,
+		Map<String, String> extraInformation
+	) {
+		public boolean isAttachment() {
+			return destination.equals("attachment");
+		}
+
+		public boolean isInline() {
+			return destination.equals("inline");
+		}
+
+		public String getFilename() {
+			return extraInformation.get("filename");
+		}
+	}
+
+	public static ContentDisposition parseContentDisposition(String contentDisposition) {
+		var parts = contentDisposition.split(";", 2);
+		if (parts.length == 2)
+			return new ContentDisposition(parts[0].trim().toLowerCase(Locale.ROOT), parseExtraInformation(parts[1]));
+		if (parts.length == 1)
+			return new ContentDisposition(parts[0].trim().toLowerCase(Locale.ROOT), Map.of());
+		return new ContentDisposition("attachment", Map.of());
+	}
+
 	public static Charset getCharset(HttpResponse.ResponseInfo responseInfo) {
 		var charsetName = parseContentType(responseInfo)
 			.extraInformation()

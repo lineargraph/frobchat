@@ -13,6 +13,7 @@ dependencies {
 	implementation(libs.gemsfx)
 	implementation(libs.atlantafx.base)
 	implementation(libs.slf4j.api)
+	implementation(libs.ikonli.feather)
 	implementation(projects.fxutils)
 	annotationProcessor(projects.fxutils) {
 		targetConfiguration = "processorElements"

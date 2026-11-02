@@ -1,11 +1,11 @@
 package moe.nea.frobmatrix;
 
 import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.core.Single;
 import io.reactivex.rxjava3.subjects.BehaviorSubject;
 import io.reactivex.rxjava3.subjects.PublishSubject;
 import moe.nea.frobmatrix.api.MatrixRESTClient;
 import moe.nea.frobmatrix.api.ResponseHelpers;
-import moe.nea.frobmatrix.api.clientserver.routes.accountdata.GetAccountData;
 import moe.nea.frobmatrix.api.clientserver.routes.profile.DeleteProfileField;
 import moe.nea.frobmatrix.api.clientserver.routes.profile.GetUserProfile;
 import moe.nea.frobmatrix.api.clientserver.routes.profile.SetProfileField;
@@ -16,12 +16,11 @@ import moe.nea.frobmatrix.types.LogInInfo;
 import moe.nea.frobmatrix.types.room.JoinState;
 import moe.nea.frobmatrix.types.room.MatrixRoom;
 import moe.nea.frobmatrix.types.room.MatrixRoomImpl;
-import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import tools.jackson.databind.JsonNode;
-import tools.jackson.databind.node.StringNode;
 
+import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -29,6 +28,7 @@ public class MatrixClient {
 	private static final Logger log = LoggerFactory.getLogger(MatrixClient.class);
 	final MatrixStorage storage;
 	final MatrixRESTClient restClient;
+	final FileCache fileCache;
 	final BehaviorSubject<Map<MxRoomId, MatrixRoom>> rooms = BehaviorSubject.createDefault(Map.of());
 
 	public MatrixStorage getStorage() {
@@ -45,6 +45,11 @@ public class MatrixClient {
 	) {
 		this.storage = storage;
 		this.restClient = restClient;
+		this.fileCache = new FileCache(this);
+	}
+
+	public Single<Path> downloadFile(MxMxcUri uri) {
+		return fileCache.download(uri);
 	}
 
 	public Observable<Map<MxRoomId, MatrixRoom>> observeRooms() {
@@ -124,6 +129,13 @@ public class MatrixClient {
 		stopped.setRelease(true);
 	}
 
+	public void blockForStatus(Status status) {
+		Status ignored = observeStatus()
+			.filter(it -> it == status)
+			.blockingFirst();
+		assert ignored == status;
+	}
+
 	private void syncLoop() {
 		onStatus.onNext(Status.STARTING);
 		verifyLogin();
@@ -148,8 +160,8 @@ public class MatrixClient {
 		return userProfile.map(GetUserProfile.Response::displayname);
 	}
 
-	public Observable<MxMxcUri> getAvatarUri() {
-		return userProfile.map(GetUserProfile.Response::avatarUrl);
+	public Observable<Optional<MxMxcUri>> getAvatarUri() {
+		return userProfile.map(it -> Optional.ofNullable(it.avatarUrl()));
 	}
 
 	public void setProfileField(String key, JsonNode value) {

@@ -1,0 +1,41 @@
+<?import javafx.scene.layout.HBox?>
+<?import com.dlsc.gemsfx.AvatarView?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.text.Text?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.layout.Border?>
+<?import atlantafx.base.controls.Sidebar?>
+<?import org.kordamp.ikonli.javafx.FontIcon?>
+<?import org.kordamp.ikonli.feather.Feather?>
+<?import org.kordamp.ikonli.Ikon?>
+<?import javafx.scene.layout.Priority?>
+<fx:root
+	fx:controller="moe.nea.frobmatrix.ui.view.AccountOverview"
+	xmlns="http://javafx.com/javafx/19"
+	xmlns:fx="http://javafx.com/fxml/1"
+	alignment="CENTER_LEFT"
+	type="moe.nea.frobmatrix.ui.view.AccountOverview">
+	<HBox styleClass="button button-outlined">
+		<HBox.hgrow>
+			<Priority fx:value="ALWAYS"/>
+		</HBox.hgrow>
+		<AvatarView fx:id="avatar"/>
+		<VBox alignment="CENTER_LEFT">
+			<padding>
+				<Insets topRightBottomLeft="5"/>
+			</padding>
+			<Text fx:id="displayName"/>
+			<Text fx:id="userName" styleClass="text-muted"/>
+		</VBox>
+	</HBox>
+	<Button fx:id="settingsButton" styleClass="button-icon flat">
+		<graphic>
+			<FontIcon>
+				<iconCode>
+					<Feather fx:value="SETTINGS"/>
+				</iconCode>
+			</FontIcon>
+		</graphic>
+	</Button>
+</fx:root>

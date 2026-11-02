@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import java.lang.*?>
+<?import java.util.*?>
+<?import javafx.scene.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<?import com.dlsc.gemsfx.DrawerStackPane?>
+<?import moe.nea.frobmatrix.ui.view.AccountOverview?>
+<?import javafx.scene.text.Text?>
+<DrawerStackPane xmlns="http://javafx.com/javafx"
+				 xmlns:fx="http://javafx.com/fxml"
+				 fx:controller="moe.nea.frobmatrix.ui.view.SidePane"
+>
+	<prefWidth>
+		<Double fx:value="350"/>
+	</prefWidth>
+	<BorderPane>
+		<center>
+			<ScrollPane>
+				<Text text="MEow!"></Text>
+			</ScrollPane>
+		</center>
+		<bottom>
+			<AccountOverview/>
+		</bottom>
+	</BorderPane>
+</DrawerStackPane>
