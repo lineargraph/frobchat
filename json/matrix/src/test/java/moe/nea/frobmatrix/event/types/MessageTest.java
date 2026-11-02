@@ -3,12 +3,14 @@ package moe.nea.frobmatrix.event.types;
 import moe.nea.frobmatrix.api.ResponseHelpers;
 import moe.nea.frobmatrix.event.types.message.TextMessage;
 import moe.nea.frobmatrix.test.JsonMatchers;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.JsonNode;
 
 import static moe.nea.frobmatrix.test.JsonMatchers.hasProperty;
 import static moe.nea.frobmatrix.test.JsonMatchers.hasString;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.anEmptyMap;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -23,18 +25,10 @@ class MessageTest {
 			}
 			""", JsonNode.class);
 		Message message = ResponseHelpers.fromJsonNode(node, Message.class);
-		assertThat(
-			ResponseHelpers.toJsonValue(message),
-			equalTo(node)
-		);
-		assertThat(
-			message.body(),
-			equalTo("exists!")
-		);
-		assertThat(
-			message.msgtype(),
-			equalTo("moe.nea.unassigned")
-		);
+		assertThat(ResponseHelpers.toJsonValue(message), equalTo(node));
+		assertThat(message.body(), equalTo("exists!"));
+		assertThat(message.msgtype(), equalTo("moe.nea.unassigned"));
+		assertThat(message.getExtraFields().get("custom_field"), hasString(equalTo("i genuinely do not know")));
 	}
 
 	@Test
@@ -55,8 +49,10 @@ class MessageTest {
 				   "msgtype": "m.text"
 				}
 				""",
-			Message.class
-		);
+			Message.class);
+		assertThat(
+			textMessage.getExtraFields(),
+			anEmptyMap());
 		assertThat(
 			textMessage.msgtype(),
 			equalTo("m.text"));
