@@ -1,5 +1,6 @@
 package moe.nea.frobmatrix;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import moe.nea.frobmatrix.api.UriParameter;
 
@@ -11,6 +12,7 @@ public record MxRoomAlias(
 ) implements UriParameter {
 	public static final Pattern MX_ROOM_ALIAS_PATTERN = Pattern.compile("#(.+):(.+)");
 
+	@JsonCreator
 	public static MxRoomAlias parse(String mxcId) {
 		var matcher = MX_ROOM_ALIAS_PATTERN.matcher(mxcId);
 		if (matcher.matches())

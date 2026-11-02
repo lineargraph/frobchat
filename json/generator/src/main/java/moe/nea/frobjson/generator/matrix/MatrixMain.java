@@ -52,11 +52,11 @@ public class MatrixMain {
 		schemaLibrary
 			.override(ctx ->
 				ctx.ifPath(path -> path.endsWith("/core-event-schema/event.yaml"))
-					.thenUseClass("moe.nea.frobmatrix.event.Event"));
-		schemaLibrary
-			.override(ctx ->
-				ctx.ifPath(path -> path.endsWith("/core-event-schema/stripped_state.yaml"))
-					.thenUseClass("moe.nea.frobmatrix.event.StrippedStateEvent"));
+					.thenUseClass("moe.nea.frobmatrix.eventschemas.schema.coreeventschema.event.Event"));
+//		schemaLibrary
+//			.override(ctx ->
+//				ctx.ifPath(path -> path.endsWith("/core-event-schema/stripped_state.yaml"))
+//					.thenUseClass("moe.nea.frobmatrix.event.StrippedStateEvent"));
 
 		clientServerApi.generateRoutes("room_summary.yaml");
 		clientServerApi.generateRoutes("wellknown.yaml");

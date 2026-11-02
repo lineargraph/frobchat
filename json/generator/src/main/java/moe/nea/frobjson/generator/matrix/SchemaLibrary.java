@@ -116,12 +116,12 @@ public class SchemaLibrary {
 		assert parts.length == 1 : "Nested references not handled yet";
 		if (parts[0].startsWith("SPEC_ROOT/")) {
 			referencePath = new SchemaReferencePath(
-				Path.of(parts[0].substring("SPEC_ROOT/".length())),
+				Path.of(parts[0].substring("SPEC_ROOT/".length())).normalize(),
 				DataRoot.SPEC
 			);
 		} else {
 			referencePath = new SchemaReferencePath(
-				relativeTo.relativeToDataRoot.getParent().resolve(parts[0]),
+				relativeTo.relativeToDataRoot.getParent().resolve(parts[0]).normalize(),
 				relativeTo.dataRoot
 			);
 		}

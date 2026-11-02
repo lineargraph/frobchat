@@ -1,4 +1,4 @@
 package moe.nea.frobmatrix.event;
 
-public class StateEvent {
+public interface StateEvent extends Event {
 }

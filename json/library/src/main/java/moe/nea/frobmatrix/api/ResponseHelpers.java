@@ -6,6 +6,7 @@ import moe.nea.frobmatrix.http.IntegerUriParameter;
 import moe.nea.frobmatrix.http.StringUriParameter;
 import org.jspecify.annotations.Nullable;
 import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.MapperFeature;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -19,7 +20,9 @@ import java.util.*;
 import java.util.regex.Pattern;
 
 public class ResponseHelpers {
-	private final static ObjectMapper MAPPER = new JsonMapper();
+	private final static ObjectMapper MAPPER = new JsonMapper()
+		.rebuild()
+		.build();
 
 	public static <T> HttpRequest.BodyPublisher publishJson(T body, Class<T> bodyType) {
 		return HttpRequest.BodyPublishers.ofByteArray(MAPPER.writeValueAsBytes(body));

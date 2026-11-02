@@ -20,7 +20,7 @@ class SyncTest {
 				.additionalProperties().get(null)
 				.timeline().events();
 			var joinedRoom = response.rooms().join().additionalProperties().get(null);
-			List<Event> accountData = joinedRoom.accountData().events();
+			List<? extends Event> accountData = joinedRoom.accountData().events();
 			List<ClientEventWithoutRoomId> stateEvents = joinedRoom.state().events();
 			for (ClientEventWithoutRoomId event : joinedRoom
 				.timeline()
