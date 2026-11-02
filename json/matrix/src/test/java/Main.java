@@ -1,3 +1,5 @@
+import moe.nea.frobmatrix.MatrixClient;
+import moe.nea.frobmatrix.MxRoomId;
 import moe.nea.frobmatrix.MxUserId;
 import moe.nea.frobmatrix.api.Authentication;
 import moe.nea.frobmatrix.api.MatrixRESTClient;
@@ -7,41 +9,25 @@ import moe.nea.frobmatrix.api.clientserver.routes.sync.Sync;
 import moe.nea.frobmatrix.api.clientserver.routes.sync.SyncApi;
 import moe.nea.frobmatrix.api.clientserver.routes.wellknown.GetWellknown;
 import moe.nea.frobmatrix.api.clientserver.routes.whoami.GetTokenOwner;
+import moe.nea.frobmatrix.storage.MatrixStorage;
+import moe.nea.frobmatrix.storage.MemoryStorage;
+import moe.nea.frobmatrix.types.event.MessageEvent;
 
 import java.net.http.HttpClient;
 
 public class Main {
 	public static void main(String[] args) {
-		var httpClient = HttpClient.newHttpClient();
-		var matrixClient = new MatrixRESTClient(httpClient, "nea.moe", Authentication.none());
-		System.out.println(matrixClient.execute(new GetWellknown()));
 		var TEST_TOKEN = "syt_dGVzdA_oUuqBZxodLPeyCoEyTLR_22RpPL";
 		var TEST_USER = MxUserId.parse("@test:nea.moe");
-		matrixClient = new MatrixRESTClient(httpClient, "matrix.nea.moe", Authentication.token(TEST_TOKEN));
-		System.out.println(matrixClient.execute(new GetTokenOwner()));
-		var apis = new ClientServerApi(matrixClient);
-		Sync.Response syncResult = matrixClient.execute(new Sync(
-			null,
-			null,
-			true,
-			null,
-			3000,
-			true
-		));
-		System.out.println(ResponseHelpers.toJsonValue(syncResult));
-
-//		var client = MatrixClient.client(
-//			httpClient,
-//			MatrixAuthentication.anon("https://nea.moe")
-//		);
-//		var result = client.getWellknown().join();
-//		System.out.println(result.mHomeserver());
-//		client = MatrixClient.client(
-//			httpClient,
-//			MatrixAuthentication.anon("https://matrix.nea.moe")
-//		);
-//		System.out.println(client.getLoginFlows().join());
-//		System.out.println(new UserIdentifierExt.MIdUser("nea").asJson());
-//		System.out.println(UserIdentifierExt.downcast(UserIdentifier.fromJson(new UserIdentifierExt.MIdUser("nea").asJson())));
+		var TEST_HOMESERVER = "matrix.nea.moe";
+		var restClient = new MatrixRESTClient(HttpClient.newHttpClient(), "matrix.nea.moe", Authentication.token(TEST_TOKEN));
+		var storage = new MatrixStorage(new MemoryStorage());
+		var client = new MatrixClient(storage, restClient);
+		var dmsWithMe = client.getRoom(new MxRoomId("IVeSfvhpVNHxhhhtKk:nea.moe"));
+		var disposable = dmsWithMe.timeline()
+			.ofType(MessageEvent.class)
+			.forEach(it -> System.out.println(it.eventContent().body()));
+		while (true)
+			client.syncOnce();
 	}
 }

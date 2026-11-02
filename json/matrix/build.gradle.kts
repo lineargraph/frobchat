@@ -3,6 +3,7 @@ plugins {
 }
 dependencies {
 	api(projects.json.library)
+	api(libs.rxjava)
 	testImplementation(libs.junit)
 	testImplementation(libs.hamcrest)
 	testRuntimeOnly(libs.junit.platform)
