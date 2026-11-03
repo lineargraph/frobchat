@@ -2,15 +2,13 @@ package moe.nea.frobmatrix.ui.view;
 
 import com.dlsc.gemsfx.AvatarView;
 import javafx.fxml.Initializable;
-import javafx.scene.Parent;
 import javafx.scene.control.Button;
 import javafx.scene.layout.HBox;
 import javafx.scene.text.Text;
+import moe.nea.frobmatrix.ui.FrobApplication;
 import moe.nea.frobmatrix.ui.MatrixPlatform;
 import moe.nea.frobmatrix.ui.util.FXMLUtil;
 import moe.nea.frobmatrix.util.StringUtil;
-import org.kordamp.ikonli.feather.Feather;
-import org.kordamp.ikonli.javafx.FontIcon;
 
 import java.net.URL;
 import java.util.ResourceBundle;
@@ -24,6 +22,10 @@ public class AccountOverview extends HBox implements Initializable {
 
 	public AccountOverview() {
 		FXMLUtil.inject(this, AccountOverview.class);
+	}
+
+	public void openSettings() {
+		FrobApplication.instance().showSettings();
 	}
 
 	@Override

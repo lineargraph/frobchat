@@ -5,11 +5,12 @@ import javafx.scene.Parent;
 import moe.nea.frobmatrix.ui.view.WelcomePanel;
 
 import java.io.IOException;
+import java.util.Objects;
 import java.util.function.Supplier;
 
 public class FXMLUtil {
 	public static <T> void inject(T view, Class<T> tClass) {
-		var loader = new FXMLLoader(tClass.getResource(tClass.getSimpleName() + ".fxml"));
+		var loader = new FXMLLoader(Objects.requireNonNull(tClass.getResource(tClass.getSimpleName() + ".fxml"), () -> "Could not find .fxml file for " + tClass));
 		loader.setControllerFactory(type -> {
 			if (type == tClass)
 				return view;

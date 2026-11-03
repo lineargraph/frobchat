@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import moe.nea.frobmatrix.ui.view.SettingsScene?>
+<?import atlantafx.base.controls.SidebarSkin.SidebarRootPane?>
+<?import atlantafx.base.controls.Sidebar?>
+<?import atlantafx.base.controls.SidebarNav?>
+<?import javafx.scene.control.ScrollPane?>
+<?import moe.nea.frobmatrix.ui.view.settings.SettingsPage?>
+<?import moe.nea.frobmatrix.ui.view.settings.Setting?>
+<?import java.lang.String?>
+<fx:root
+	type="SettingsScene"
+	xmlns="http://javafx.com/javafx"
+	xmlns:fx="http://javafx.com/fxml"
+	fx:controller="moe.nea.frobmatrix.ui.view.SettingsScene"
+>
+	<settings>
+		<SettingsPage>
+			<label>
+				<String fx:value="General"/>
+			</label>
+			<Setting>
+				<text>
+					<String fx:value="Whatever, dude"/>
+				</text>
+			</Setting>
+		</SettingsPage>
+	</settings>
+	<left>
+		<Sidebar fx:id="sidebar"
+				 prefWidth="300"
+				 prefHeight="600">
+		</Sidebar>
+	</left>
+	<center>
+		<ScrollPane
+			fx:id="scrollPane"
+			prefWidth="500" prefHeight="600"
+		>
+
+		</ScrollPane>
+	</center>
+</fx:root>
