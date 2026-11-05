@@ -3,11 +3,13 @@ package moe.nea.frobmatrix;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import moe.nea.frobmatrix.api.UriParameter;
+import org.jspecify.annotations.NonNull;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.DeserializationContext;
 import tools.jackson.databind.KeyDeserializer;
 import tools.jackson.databind.annotation.JsonDeserialize;
 
+import java.util.Comparator;
 import java.util.regex.Pattern;
 
 @JsonDeserialize(
@@ -17,6 +19,7 @@ public record MxRoomId(
 	String opaqueId
 ) implements UriParameter {
 	public static final Pattern MX_ROOM_ID_PATTERN = Pattern.compile("!(.+)");
+	public static final Comparator<MxRoomId> COMPARATOR = Comparator.comparing(MxRoomId::opaqueId);
 
 	public static class MxRoomIdKeyDeserializer extends KeyDeserializer {
 		@Override

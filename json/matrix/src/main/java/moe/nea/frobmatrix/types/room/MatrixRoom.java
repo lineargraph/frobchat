@@ -9,8 +9,12 @@ import moe.nea.frobmatrix.types.MatrixObject;
 import moe.nea.frobmatrix.types.event.RoomEvent;
 import org.jspecify.annotations.NullMarked;
 
+import java.util.Comparator;
+
 @NullMarked
 public interface MatrixRoom extends MatrixObject {
+	Comparator<MatrixRoom> ROOM_ID_COMPARATOR = Comparator.comparing(MatrixRoom::roomId, MxRoomId.COMPARATOR);
+
 	@Nullable
 	JoinState joinState();
 

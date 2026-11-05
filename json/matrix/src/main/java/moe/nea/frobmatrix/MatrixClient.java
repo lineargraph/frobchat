@@ -21,15 +21,20 @@ import org.slf4j.LoggerFactory;
 import tools.jackson.databind.JsonNode;
 
 import java.nio.file.Path;
-import java.util.*;
+import java.time.Duration;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class MatrixClient {
 	private static final Logger log = LoggerFactory.getLogger(MatrixClient.class);
 	final MatrixStorage storage;
 	final MatrixRESTClient restClient;
 	final FileCache fileCache;
-	final BehaviorSubject<Map<MxRoomId, MatrixRoom>> rooms = BehaviorSubject.createDefault(Map.of());
+	public final BehaviorSubject<Map<MxRoomId, MatrixRoom>> rooms = BehaviorSubject.createDefault(Map.of());
 
 	public MatrixStorage getStorage() {
 		return storage;
@@ -52,8 +57,12 @@ public class MatrixClient {
 		return fileCache.download(uri);
 	}
 
+	AtomicInteger totalRoomSubscriptions = new AtomicInteger();
+
 	public Observable<Map<MxRoomId, MatrixRoom>> observeRooms() {
-		return rooms.hide();
+		return rooms.hide()
+			.doOnSubscribe(obs -> log.info("Subscribed to room observation (total: {})", totalRoomSubscriptions.incrementAndGet()))
+			.doOnDispose(() -> log.info("Unsubscribed from room observation (total: {})", totalRoomSubscriptions.decrementAndGet()));
 	}
 
 	public MatrixRoom getRoom(MxRoomId roomId) {
@@ -116,7 +125,7 @@ public class MatrixClient {
 	public enum Status {
 		STARTING,
 		STARTED,
-		STOPPED
+		ERRORED, STOPPED
 	}
 
 	private final PublishSubject<Status> onStatus = PublishSubject.create();
@@ -140,9 +149,23 @@ public class MatrixClient {
 		onStatus.onNext(Status.STARTING);
 		verifyLogin();
 		onStatus.onNext(Status.STARTED);
-		while (!stopped.getAcquire()) {
-			syncOnce();
+		try {
+			while (!stopped.getAcquire()) {
+				try {
+					syncOnce();
+				} catch (Exception e) {
+					log.error("Encountered error during sync", e);
+				}
+				Thread.sleep(Duration.ofSeconds(4L));
+			}
+		} catch (Throwable t) {
+			log.error("Encountered fatal exception during sync", t);
+			onStatus.onNext(Status.ERRORED);
+			onStatus.onComplete();
+			// TODO: sneakyThrow and better rethrow wrapping
+			throw new RuntimeException(t);
 		}
+
 		onStatus.onNext(Status.STOPPED);
 		onStatus.onComplete();
 	}

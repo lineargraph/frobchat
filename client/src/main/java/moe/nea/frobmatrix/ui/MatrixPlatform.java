@@ -13,6 +13,7 @@ import moe.nea.frobmatrix.api.Authentication;
 import moe.nea.frobmatrix.api.MatrixRESTClient;
 import moe.nea.frobmatrix.storage.MatrixStorage;
 import moe.nea.frobmatrix.storage.MemoryStorage;
+import moe.nea.frobmatrix.ui.util.ListenerOnceBinding;
 import org.pdfsam.rxjavafx.observers.JavaFxObserver;
 import org.pdfsam.rxjavafx.schedulers.JavaFxScheduler;
 
@@ -38,11 +39,11 @@ public class MatrixPlatform {
 	}
 
 	public <T> Binding<T> asBinding(Observable<T> observable) {
-		return JavaFxObserver.toBinding(observable.distinctUntilChanged().observeOn(JavaFxScheduler.platform()));
+		return new ListenerOnceBinding<>(JavaFxObserver.toBinding(observable.distinctUntilChanged().observeOn(JavaFxScheduler.platform())));
 	}
 
 	public <T> Binding<T> asNullableBinding(Observable<Optional<T>> observable) {
-		return JavaFxObserver.toNullableBinding(observable.distinctUntilChanged().observeOn(JavaFxScheduler.platform()));
+		return new ListenerOnceBinding<>(JavaFxObserver.toNullableBinding(observable.distinctUntilChanged().observeOn(JavaFxScheduler.platform())));
 	}
 
 	public ObservableValue<Image> getAvatar(Observable<Optional<MxMxcUri>> imageUrl) {

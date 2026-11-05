@@ -35,8 +35,5 @@ public class AccountOverview extends HBox implements Initializable {
 		this.userName.textProperty().set(userName);
 		avatar.initialsProperty().bind(displayName.textProperty().map(it -> StringUtil.getInitials(it, 2)));
 		avatar.imageProperty().bind(matrixPlatform.getAvatar(matrixPlatform.client().getAvatarUri()));
-//		settingsButton.setGraphic(
-//			new FontIcon(Feather.SETTINGS)
-//		);
 	}
 }

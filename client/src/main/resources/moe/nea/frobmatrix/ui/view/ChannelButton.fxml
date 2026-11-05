@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.text.Text?>
+<?import moe.nea.frobmatrix.ui.view.ChannelButton?>
+<?import org.kordamp.ikonli.feather.Feather?>
+<?import org.kordamp.ikonli.javafx.FontIcon?>
+<fx:root
+	xmlns:fx="http://javafx.com/fxml"
+	type="moe.nea.frobmatrix.ui.view.ChannelButton"
+	xmlns="http://javafx.com/javafx"
+	fx:controller="moe.nea.frobmatrix.ui.view.ChannelButton"
+>
+	<HBox>
+		<FontIcon fx:id="icon">
+			<iconCode>
+				<Feather fx:value="HASH"/>
+			</iconCode>
+		</FontIcon>
+		<Text fx:id="channelName"/>
+	</HBox>
+</fx:root>
