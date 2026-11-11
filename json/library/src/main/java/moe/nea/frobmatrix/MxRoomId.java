@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import moe.nea.frobmatrix.api.UriParameter;
 import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.NullMarked;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.DeserializationContext;
 import tools.jackson.databind.KeyDeserializer;
@@ -15,6 +16,7 @@ import java.util.regex.Pattern;
 @JsonDeserialize(
 	keyUsing = MxRoomId.MxRoomIdKeyDeserializer.class
 )
+@NullMarked
 public record MxRoomId(
 	String opaqueId
 ) implements UriParameter {

@@ -6,6 +6,7 @@ import moe.nea.frobmatrix.Either;
 import moe.nea.frobmatrix.http.IntegerUriParameter;
 import moe.nea.frobmatrix.http.StringUriParameter;
 import org.jspecify.annotations.Nullable;
+import tools.jackson.core.JacksonException;
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
@@ -179,8 +180,12 @@ public class ResponseHelpers {
 		}
 	}
 
-	public static <T> T fromJsonNode(JsonNode node, Class<T> tClass) {
+	public static <T> T fromJsonNode(JsonNode node, Class<T> tClass) throws JacksonException {
 		return MAPPER.treeToValue(node, tClass);
+	}
+
+	private static boolean isMonitoring() {
+		return false;
 	}
 
 	public static <T> HttpResponse.BodySubscriber<Supplier<T>> parseJson(
@@ -202,7 +207,13 @@ public class ResponseHelpers {
 	) {
 		return HttpResponse.BodySubscribers.mapping(HttpResponse.BodySubscribers.ofInputStream(), inputStream_ -> () -> {
 			try (var inputStream = inputStream_) {
-				return MAPPER.readValue(new InputStreamReader(inputStream, getCharset(responseInfo)), dataClass);
+				if (isMonitoring()) {
+					var tree = MAPPER.readTree(inputStream);
+					System.out.println("Got JSON:\n" + tree);
+					return MAPPER.treeToValue(tree, dataClass);
+				} else {
+					return MAPPER.readValue(new InputStreamReader(inputStream, getCharset(responseInfo)), dataClass);
+				}
 			} catch (IOException e) {
 				throw new CompletionException(e);
 			}

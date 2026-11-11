@@ -10,6 +10,7 @@ import moe.nea.frobmatrix.types.event.RoomEvent;
 import org.jspecify.annotations.NullMarked;
 
 import java.util.Comparator;
+import java.util.Optional;
 
 @NullMarked
 public interface MatrixRoom extends MatrixObject {
@@ -22,9 +23,17 @@ public interface MatrixRoom extends MatrixObject {
 
 	Observable<JoinState> observeJoinState();
 
-	<T extends EventContent<T>> @Nullable T getStateEvent(StateEventType<T> stateEventType, String stateEventKey);
+	<T extends EventContent<T>> Optional<T> getStateEvent(StateEventType<T> stateEventType, String stateEventKey);
 
-	<T extends EventContent<T>> Observable<T> observeStateEvent(StateEventType<T> stateEventType, String stateEventKey);
+	<T extends EventContent<T>> Observable<Optional<T>> observeStateEvent(StateEventType<T> stateEventType, String stateEventKey);
+
+	default <T extends EventContent<T>> Observable<Optional<T>> observeStateEvent(StateEventType<T> stateEventType) {
+		return observeStateEvent(stateEventType, "");
+	}
+
+	Observable<Optional<String>> roomName();
+
+	Observable<String> roomTitle();
 
 	MxRoomId roomId();
 

@@ -40,7 +40,7 @@ public class Main {
 					shutdownSignal.set(true);
 			});
 		while (!shutdownSignal.get())
-			client.syncOnce();
+			client.syncOnce(false);
 		disposable.dispose();
 		storageBackend.save(storageFile);
 	}

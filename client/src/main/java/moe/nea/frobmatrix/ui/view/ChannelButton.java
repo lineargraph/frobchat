@@ -23,7 +23,7 @@ public class ChannelButton extends VBox implements Initializable {
 	}
 
 	@Override public void initialize(URL location, ResourceBundle resources) {
-		channelName.textProperty().set(matrixRoom.roomId().asUriParameter());
+		channelName.textProperty().bind(matrixPlatform.asBinding(matrixRoom.roomTitle()));
 //		icon.iconCodeProperty()
 //			.bind();
 	}

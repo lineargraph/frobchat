@@ -79,13 +79,13 @@ public class MatrixClient {
 		return roomImpl;
 	}
 
-	public void syncOnce() {
+	public void syncOnce(boolean isFirst) {
 		var sync = getRestClient().execute(new Sync(
 			null,
 			storage.getLastWatermark(),
-			true,
+			isFirst,
 			null,
-			1000,
+			isFirst ? 0 : 1000,
 			true
 		));
 		storage.setLastWatermark(sync.nextBatch());
@@ -149,10 +149,12 @@ public class MatrixClient {
 		onStatus.onNext(Status.STARTING);
 		verifyLogin();
 		onStatus.onNext(Status.STARTED);
+		boolean isFirstSync = true;
 		try {
 			while (!stopped.getAcquire()) {
 				try {
-					syncOnce();
+					syncOnce(isFirstSync);
+					isFirstSync = false;
 				} catch (Exception e) {
 					log.error("Encountered error during sync", e);
 				}
