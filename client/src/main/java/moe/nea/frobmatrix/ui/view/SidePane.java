@@ -7,6 +7,7 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.Initializable;
 import javafx.scene.Parent;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.layout.VBox;
 import moe.nea.frobmatrix.types.room.MatrixRoom;
 import moe.nea.frobmatrix.ui.MatrixPlatform;
@@ -20,6 +21,7 @@ public class SidePane implements Initializable {
 
 	public final MatrixPlatform matrixPlatform = MatrixPlatform.matrixPlatform;
 	public VBox channelView;
+	public ScrollPane scrollPane;
 
 	public static Parent loadSidePanel() {
 		return FXMLUtil.load(SidePane.class, SidePane::new);

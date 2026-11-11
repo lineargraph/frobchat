@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import javafx.scene.control.Label?>
 <?import javafx.scene.layout.HBox?>
-<?import javafx.scene.text.Text?>
 <?import moe.nea.frobmatrix.ui.view.ChannelButton?>
 <?import org.kordamp.ikonli.feather.Feather?>
 <?import org.kordamp.ikonli.javafx.FontIcon?>
@@ -17,6 +17,6 @@
 				<Feather fx:value="HASH"/>
 			</iconCode>
 		</FontIcon>
-		<Text fx:id="channelName"/>
+		<Label fx:id="channelName" textOverrun="CENTER_ELLIPSIS"/>
 	</HBox>
 </fx:root>

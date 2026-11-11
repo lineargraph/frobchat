@@ -1,8 +1,8 @@
 package moe.nea.frobmatrix.ui.view;
 
 import javafx.fxml.Initializable;
-import javafx.scene.layout.AnchorPane;
-import javafx.scene.text.Text;
+import javafx.scene.control.Label;
+import javafx.scene.layout.VBox;
 import moe.nea.frobmatrix.types.room.MatrixRoom;
 import moe.nea.frobmatrix.ui.MatrixPlatform;
 import moe.nea.frobmatrix.ui.util.FXMLUtil;
@@ -11,11 +11,11 @@ import org.kordamp.ikonli.javafx.FontIcon;
 import java.net.URL;
 import java.util.ResourceBundle;
 
-public class ChannelButton extends AnchorPane implements Initializable {
+public class ChannelButton extends VBox implements Initializable {
 	private final MatrixRoom matrixRoom;
 	MatrixPlatform matrixPlatform = MatrixPlatform.current();
 	public FontIcon icon;
-	public Text channelName;
+	public Label channelName;
 
 	public ChannelButton(MatrixRoom matrixRoom) {
 		this.matrixRoom = matrixRoom;

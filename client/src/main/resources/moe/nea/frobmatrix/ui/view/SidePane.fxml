@@ -15,7 +15,7 @@
 	</prefWidth>
 	<BorderPane>
 		<center>
-			<ScrollPane>
+			<ScrollPane fx:id="scrollPane" fitToWidth="true">
 				<VBox fx:id="channelView"/>
 			</ScrollPane>
 		</center>
