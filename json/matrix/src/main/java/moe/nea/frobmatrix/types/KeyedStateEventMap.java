@@ -5,10 +5,13 @@ import moe.nea.frobmatrix.event.EventContent;
 import moe.nea.frobmatrix.event.EventType;
 
 import java.util.Optional;
+import java.util.Set;
 
 public interface KeyedStateEventMap extends StateEventMap {
 
 	String DEFAULT_KEY = "";
+
+	Observable<Set<String>> getStateKeys(EventType<?> stateEventType);
 
 	<T extends EventContent<T>> Optional<T> getStateEvent(EventType<T> stateEventType, String stateEventKey);
 

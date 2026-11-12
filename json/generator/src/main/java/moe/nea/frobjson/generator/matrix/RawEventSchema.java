@@ -45,6 +45,7 @@ public class RawEventSchema {
 		@JsonProperty("state_key")
 		private @Nullable MemberType stateKey;
 		private StringEnumDeclaration type;
+		private Void unsigned;
 	}
 
 	@Getter

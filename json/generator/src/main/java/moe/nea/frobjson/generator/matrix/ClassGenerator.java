@@ -44,6 +44,7 @@ public interface ClassGenerator {
 			case "mx-user-id" -> ClassName.get(MxUserId.class);
 			case "mx-mxc-uri" -> ClassName.get(MxMxcUri.class);
 			case "mx-event-id" -> ClassName.get(MxEventId.class);
+			case "mx-unpadded-base64" -> ClassName.get(MxUnpaddedBase64.class);
 			case "mx-server-name" -> ClassName.get(String.class); // TODO: custom server name class
 			case "uri" -> ClassName.get(URI.class);
 			case null -> ClassName.get(String.class);

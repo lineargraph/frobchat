@@ -4,8 +4,6 @@ import io.reactivex.rxjava3.annotations.Nullable;
 import io.reactivex.rxjava3.core.Observable;
 import moe.nea.frobmatrix.MxRoomId;
 import moe.nea.frobmatrix.MxUserId;
-import moe.nea.frobmatrix.event.EventContent;
-import moe.nea.frobmatrix.event.StateEventType;
 import moe.nea.frobmatrix.types.KeyedStateEventMap;
 import moe.nea.frobmatrix.types.MatrixObject;
 import moe.nea.frobmatrix.types.event.RoomEvent;
@@ -18,13 +16,17 @@ import java.util.Optional;
 public interface MatrixRoom extends MatrixObject {
 	Comparator<MatrixRoom> ROOM_ID_COMPARATOR = Comparator.comparing(MatrixRoom::roomId, MxRoomId.COMPARATOR);
 
+	Optional<RoomMember> getRoomMember(MxUserId userId);
+
 	KeyedStateEventMap roomState();
 
 	/// @return an empty optional if this is not a DM, the partners MxUserId, otherwise
-	Observable<Optional<MxUserId>> dmConversationPartner();
+	Observable<Optional<MxUserId>> dmConversationPartnerId();
 
 	@Nullable
 	JoinState joinState();
+
+	Observable<Optional<RoomMember>> dmConversationPartner();
 
 	Observable<RoomEvent> timeline();
 

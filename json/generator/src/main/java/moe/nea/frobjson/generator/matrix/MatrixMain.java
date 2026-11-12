@@ -87,6 +87,7 @@ public class MatrixMain {
 		eventGenerator.generateEventType("m.ignored_user_list.yaml");
 		eventGenerator.generateEventType("m.room.name.yaml");
 		eventGenerator.generateEventType("m.room.pinned_events.yaml");
+		eventGenerator.generateEventType(new SchemaLibrary.SchemaReferencePath(Path.of("m.room.member.yaml"), SchemaLibrary.DataRoot.EXTRA));
 		eventGenerator.messageType = eventGenerator.generateEventType(new SchemaLibrary.SchemaReferencePath(Path.of("m.room.message.yaml"), SchemaLibrary.DataRoot.EXTRA));
 		eventGenerator.generateMessageType("m.room.message$m.text.yaml");
 		eventGenerator.generateMessageType("m.room.message$m.emote.yaml");

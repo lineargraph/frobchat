@@ -11,6 +11,7 @@ import moe.nea.frobmatrix.event.EventTypes;
 import moe.nea.frobmatrix.event.ParsedEventContent;
 import moe.nea.frobmatrix.event.types.Message;
 import moe.nea.frobmatrix.event.types.RoomName;
+import moe.nea.frobmatrix.event.types.TheCurrentMembershipStateOfAUserInTheRoom;
 import moe.nea.frobmatrix.types.KeyedStateEventMap;
 import moe.nea.frobmatrix.types.StateEventMapImpl;
 import moe.nea.frobmatrix.types.event.MessageEventImpl;
@@ -18,7 +19,9 @@ import moe.nea.frobmatrix.types.event.RoomEvent;
 import moe.nea.frobmatrix.types.event.RoomEventImpl;
 import org.jspecify.annotations.NullMarked;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @NullMarked
@@ -29,6 +32,7 @@ public class MatrixRoomImpl implements MatrixRoom {
 	private final StateEventMapImpl stateEventMap = new StateEventMapImpl();
 	private final ReplaySubject<RoomEvent> timeline = ReplaySubject.create();
 	private final Observable<Optional<MxUserId>> dmConversationPartner;
+	private final Map<MxUserId, RoomMemberImpl> roomMembers = new HashMap<>();
 
 	public MatrixRoomImpl(
 		MatrixClient client,
@@ -42,12 +46,28 @@ public class MatrixRoomImpl implements MatrixRoom {
 			.distinctUntilChanged();
 	}
 
+	private RoomMember getRoomMember0(MxUserId userId) {
+		return roomMembers.computeIfAbsent(userId, ignored -> new RoomMemberImpl(this, userId));
+	}
+
+	@Override public Optional<RoomMember> getRoomMember(MxUserId userId) {
+		var membership = roomState().getStateEvent(TheCurrentMembershipStateOfAUserInTheRoom.TYPE);
+		if (membership.isEmpty())
+			return Optional.empty();
+		return Optional.of(getRoomMember0(userId));
+	}
+
 	@Override public KeyedStateEventMap roomState() {
 		return stateEventMap;
 	}
 
-	@Override public Observable<Optional<MxUserId>> dmConversationPartner() {
+	@Override public Observable<Optional<MxUserId>> dmConversationPartnerId() {
 		return dmConversationPartner;
+	}
+
+	@Override public Observable<Optional<RoomMember>> dmConversationPartner() {
+		return dmConversationPartnerId()
+			.map(userId -> userId.map(this::getRoomMember0));
 	}
 
 	public Observable<RoomEvent> timeline() {
@@ -84,9 +104,18 @@ public class MatrixRoomImpl implements MatrixRoom {
 	}
 
 	@Override public Observable<String> roomTitle() {
-		return Observable.combineLatest(roomName(), dmConversationPartner(), (name, partner) -> name.or(() -> {
-			return partner.map(p -> "DM with " + p.asUriParameter());
-		}).orElse(roomId().asUriParameter()));
+		return Observable.combineLatest(
+			roomName(),
+			dmConversationPartner()
+				.switchMap(partnerOpt ->
+					partnerOpt.isPresent() ? partnerOpt.get().title().map(Optional::of) : Observable.just(Optional.<String>empty())),
+			(name, partner) -> {
+				if (name.isPresent())
+					return name.get();
+				if (partner.isPresent())
+					return partner.get();
+				return roomId().asUriParameter();
+			});
 	}
 
 
