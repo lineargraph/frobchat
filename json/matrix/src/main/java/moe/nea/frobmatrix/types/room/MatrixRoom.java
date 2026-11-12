@@ -3,6 +3,7 @@ package moe.nea.frobmatrix.types.room;
 import io.reactivex.rxjava3.annotations.Nullable;
 import io.reactivex.rxjava3.core.Observable;
 import moe.nea.frobmatrix.MxRoomId;
+import moe.nea.frobmatrix.MxUserId;
 import moe.nea.frobmatrix.event.EventContent;
 import moe.nea.frobmatrix.event.StateEventType;
 import moe.nea.frobmatrix.types.KeyedStateEventMap;
@@ -18,6 +19,9 @@ public interface MatrixRoom extends MatrixObject {
 	Comparator<MatrixRoom> ROOM_ID_COMPARATOR = Comparator.comparing(MatrixRoom::roomId, MxRoomId.COMPARATOR);
 
 	KeyedStateEventMap roomState();
+
+	/// @return an empty optional if this is not a DM, the partners MxUserId, otherwise
+	Observable<Optional<MxUserId>> dmConversationPartner();
 
 	@Nullable
 	JoinState joinState();

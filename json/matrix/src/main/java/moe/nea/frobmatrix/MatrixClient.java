@@ -12,6 +12,8 @@ import moe.nea.frobmatrix.api.clientserver.routes.profile.SetProfileField;
 import moe.nea.frobmatrix.api.clientserver.routes.sync.Sync;
 import moe.nea.frobmatrix.api.clientserver.routes.whoami.GetTokenOwner;
 import moe.nea.frobmatrix.storage.MatrixStorage;
+import moe.nea.frobmatrix.types.AccountData;
+import moe.nea.frobmatrix.types.AccountDataImpl;
 import moe.nea.frobmatrix.types.LogInInfo;
 import moe.nea.frobmatrix.types.room.JoinState;
 import moe.nea.frobmatrix.types.room.MatrixRoom;
@@ -34,6 +36,7 @@ public class MatrixClient {
 	final MatrixStorage storage;
 	final MatrixRESTClient restClient;
 	final FileCache fileCache;
+	final AccountDataImpl accountData = new AccountDataImpl(this);
 	public final BehaviorSubject<Map<MxRoomId, MatrixRoom>> rooms = BehaviorSubject.createDefault(Map.of());
 
 	public MatrixStorage getStorage() {
@@ -89,7 +92,12 @@ public class MatrixClient {
 			true
 		));
 		storage.setLastWatermark(sync.nextBatch());
-		for (var roomEntry : sync.rooms().join().additionalProperties().entrySet()) {
+		accountData.setAccountData(sync.accountData());
+		var roomMap = Optional.ofNullable(sync.rooms())
+			.map(Sync.Response.Rooms::join)
+			.map(Sync.Response.Rooms.JoinedRooms::additionalProperties)
+			.orElse(Map.of());
+		for (var roomEntry : roomMap.entrySet()) {
 			var roomId = roomEntry.getKey();
 			var joinedRoom = roomEntry.getValue();
 			var room = (MatrixRoomImpl) getRoom(roomId);
@@ -110,7 +118,7 @@ public class MatrixClient {
 				room.setStateEvents(timelineStateEvents);
 			}
 		}
-		for (var roomEntry : sync.rooms().join().additionalProperties().entrySet()) {
+		for (var roomEntry : roomMap.entrySet()) {
 			var roomId = roomEntry.getKey();
 			var joinedRoom = roomEntry.getValue();
 			var room = (MatrixRoomImpl) getRoom(roomId);
@@ -121,6 +129,10 @@ public class MatrixClient {
 	private Thread syncThread;
 
 	private AtomicBoolean stopped = new AtomicBoolean(false);
+
+	public AccountData getAccountData() {
+		return accountData;
+	}
 
 	public enum Status {
 		STARTING,

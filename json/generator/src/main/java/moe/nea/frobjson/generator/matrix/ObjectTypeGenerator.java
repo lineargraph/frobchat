@@ -26,6 +26,7 @@ public class ObjectTypeGenerator implements ClassGenerator {
 	private final List<Property> ownedProperties;
 	private TypeName renderedAdditionalProperties;
 	private String patternPropertyFormat;
+	private String patternPropertyFormatName;
 	private TypeName patternPropertyFormatType;
 
 	public ObjectTypeGenerator(RawJsonType.ObjectType type) {
@@ -78,8 +79,10 @@ public class ObjectTypeGenerator implements ClassGenerator {
 			if (patternProperty instanceof MemberType.DirectDeclaration directDeclaration) {
 				var directType = directDeclaration.type();
 				var patternFormat = directType.getPatternFormat();
-				if (patternFormat != null)
+				if (patternFormat != null) {
 					this.patternPropertyFormatType = getStringFormatType(patternFormat);
+					this.patternPropertyFormatName = patternFormat;
+				}
 			}
 			this.patternPropertyFormat = pattern;
 			this.renderedAdditionalProperties = resolveTypeName(classNameSpace, null, patternProperty);
@@ -141,7 +144,6 @@ public class ObjectTypeGenerator implements ClassGenerator {
 		typeSpec
 			.addField(FieldSpec.builder(mapType, "additionalProperties", Modifier.PRIVATE, Modifier.FINAL)
 				.initializer("new $T<>()", LinkedHashMap.class)
-				.addAnnotation(JsonAnySetter.class) // TODO: setting directly on the field bypasses the pattern check
 				.build())
 			.addMethod(MethodSpec.methodBuilder("additionalProperties")
 				.addAnnotation(JsonAnyGetter.class)
@@ -149,13 +151,36 @@ public class ObjectTypeGenerator implements ClassGenerator {
 				.returns(mapType)
 				.addStatement("return this.additionalProperties")
 				.build())
+			// Jackson only allows a String (or Object) key for any-setter methods, so the
+			// generated any-setter takes a String and converts it to the map's key type.
 			.addMethod(MethodSpec.methodBuilder("setAdditionalProperty")
+				.addAnnotation(JsonAnySetter.class)
+				.addModifiers(Modifier.PUBLIC)
+				.addParameter(TypeUtils.STR, "name")
+				.addParameter(additionalProperties, "value")
+				.addCode(patternCheck)
+				.addStatement("this.additionalProperties.put($L, value)", parsePatternKey(CodeBlock.of("name")))
+				.build());
+		if (!keyType.equals(TypeUtils.STR)) {
+			typeSpec.addMethod(MethodSpec.methodBuilder("setAdditionalProperty")
 				.addModifiers(Modifier.PUBLIC)
 				.addParameter(keyType, "name")
 				.addParameter(additionalProperties, "value")
-				.addCode(patternCheck)
 				.addStatement("this.additionalProperties.put(name, value)")
 				.build());
+		}
+	}
+
+	private CodeBlock parsePatternKey(CodeBlock name) {
+		if (patternPropertyFormatName == null || patternPropertyFormatType.equals(TypeUtils.STR))
+			return name;
+		return switch (patternPropertyFormatName) {
+			case "mx-room-alias", "mx-room-id", "mx-user-id", "mx-event-id" ->
+				CodeBlock.of("$T.parse($L)", patternPropertyFormatType, name);
+			default -> throw new IllegalStateException(
+				"Cannot parse pattern property key format " + patternPropertyFormatName
+					+ "; add a conversion for it here");
+		};
 	}
 
 	public void writeToString(TypeSpec.Builder typeSpec, ClassNameSpace classNameSpace) {
